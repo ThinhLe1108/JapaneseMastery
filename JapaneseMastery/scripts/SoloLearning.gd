@@ -31,6 +31,8 @@ var ref_image: Image
 
 func _ready():
 	var level = Global.get_current_level()
+	if Global.get("solo_target_level") != null:
+		level = Global.solo_target_level
 	setup_ui()
 	setup_validation_viewport()
 	
@@ -42,6 +44,12 @@ func _ready():
 	_fetch_vocab_from_server(level)
 
 func _fetch_vocab_from_server(level: int):
+	var level_data = Curriculum.get_level(level)
+	if level_data.size() > 0:
+		vocab_data = level_data
+		show_reading_phase()
+		return
+		
 	var req = HTTPRequest.new()
 	add_child(req)
 	req.request_completed.connect(_on_vocab_fetched.bind(req, level))
@@ -70,12 +78,7 @@ func _on_vocab_fetched(result, code, headers, body, req: HTTPRequest, level: int
 				show_reading_phase()
 				return
 				
-	# Fallback if server fails or empty
-	if Curriculum.LEVELS.has(level):
-		vocab_data = Curriculum.LEVELS[level]
-	else:
-		vocab_data = [{"kana": "Error", "romaji": "Failed to fetch from server"}]
-	
+	vocab_data = [{"kana": "Error", "romaji": "Failed to fetch from server"}]
 	show_reading_phase()
 
 func setup_ui():
@@ -84,6 +87,13 @@ func setup_ui():
 	bg.color = Color(0.12, 0.12, 0.16)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	
+	# Draw Canvas (Must be added before buttons so they stay on top)
+	draw_canvas = Control.new()
+	draw_canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	draw_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
+	draw_canvas.gui_input.connect(_on_canvas_gui_input)
+	add_child(draw_canvas)
 	
 	# Back Button
 	var btn_back = Button.new()
@@ -101,6 +111,8 @@ func setup_ui():
 	btn_skip.pressed.connect(_skip_vocab)
 	add_child(btn_skip)
 	
+
+	
 	# Kana Label
 	word_label = Label.new()
 	word_label.add_theme_font_size_override("font_size", 200)
@@ -112,33 +124,26 @@ func setup_ui():
 	word_label.position.y = -50
 	add_child(word_label)
 	
-	# Romaji Label
+	# Romaji Label (Duolingo style - Top Left of character)
 	romaji_label = Label.new()
-	romaji_label.add_theme_font_size_override("font_size", 40)
-	romaji_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	romaji_label.add_theme_font_size_override("font_size", 32)
 	romaji_label.set_anchors_preset(Control.PRESET_CENTER)
-	romaji_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	romaji_label.position.y = 150
+	romaji_label.position = Vector2(-250, -250)
 	romaji_label.modulate = Color(0.6, 0.8, 1.0)
 	add_child(romaji_label)
 	
 	# Draw Prompt
 	draw_prompt = Label.new()
-	draw_prompt.text = "Hãy vẽ đè lên chữ trên để luyện tập!"
-	draw_prompt.add_theme_font_size_override("font_size", 24)
+	draw_prompt.text = "Trace the character"
+	draw_prompt.add_theme_font_size_override("font_size", 36)
 	draw_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	draw_prompt.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	draw_prompt.position.y = 80
-	draw_prompt.modulate = Color(1.0, 0.8, 0.4)
+	draw_prompt.modulate = Color.WHITE
 	draw_prompt.hide()
 	add_child(draw_prompt)
 	
-	# Draw Canvas
-	draw_canvas = Control.new()
-	draw_canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	draw_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
-	draw_canvas.gui_input.connect(_on_canvas_gui_input)
-	add_child(draw_canvas)
+
 	
 	# Toolbox (Pen, Eraser, Undo, Clear)
 	var tool_box = HBoxContainer.new()
@@ -240,7 +245,9 @@ func show_reading_phase():
 	if vocab.has("meaning") and vocab["meaning"] != "":
 		romaji_label.text += "\nNghĩa: " + vocab["meaning"]
 	romaji_label.show()
+	romaji_label.modulate = Color(0.6, 0.8, 1.0)
 	
+	btn_next.show()
 	btn_next.text = "Chuyển sang Luyện viết"
 
 func show_writing_phase():
@@ -444,6 +451,8 @@ func validate_drawing_pixel_perfect() -> Dictionary:
 		
 	return {"valid": true, "msg": "Tuyệt vời! (Accuracy: %d%%)" % int(final_accuracy)}
 
+var is_checking = false
+
 func _on_canvas_gui_input(event):
 	if state != "WRITING": return
 	
@@ -463,10 +472,27 @@ func _on_canvas_gui_input(event):
 					all_lines.append(current_line)
 				else:
 					is_drawing = false
+					_auto_check_drawing() # Cơ chế Duolingo: Tự động check khi nhấc bút!
 		elif event is InputEventMouseMotion and is_drawing:
 			if current_line:
-				current_line.add_point(event.position)
+				var img_pos = Vector2i(event.position)
+				var is_inside = false
 				
+				# Tăng độ bao dung (tolerance) bằng cách check grid 3x3
+				if ref_image and img_pos.x >= 20 and img_pos.y >= 20 and img_pos.x < ref_image.get_width() - 20 and img_pos.y < ref_image.get_height() - 20:
+					for dx in [-20, 0, 20]:
+						for dy in [-20, 0, 20]:
+							if ref_image.get_pixel(img_pos.x + dx, img_pos.y + dy).r > 0.1:
+								is_inside = true
+								break
+						if is_inside: break
+				
+				if is_inside:
+					current_line.add_point(event.position)
+				else:
+					# Bị trượt ra ngoài khuôn chữ -> Dừng nét vẽ ngay lập tức!
+					is_drawing = false
+					_auto_check_drawing()
 	elif current_tool == "ERASER":
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 			is_drawing = event.pressed
@@ -474,6 +500,33 @@ func _on_canvas_gui_input(event):
 				_erase_stroke_at(event.position)
 		elif event is InputEventMouseMotion and is_drawing:
 			_erase_stroke_at(event.position)
+
+func _auto_check_drawing():
+	if state != "WRITING" or is_checking: return
+	is_checking = true
+	
+	var validation = await validate_drawing_pixel_perfect()
+	
+	# Nếu đang vẽ mà đúng luôn -> Tự động chuyển qua chữ khác!
+	if state == "WRITING" and validation["valid"]:
+		state = "RESULT"
+		romaji_label.text = "Chính xác! Đang tải chữ tiếp theo..."
+		romaji_label.modulate = Color(0.4, 1.0, 0.4)
+		romaji_label.show()
+		
+		# Ẩn các nút rườm rà
+		tool_container.hide()
+		btn_next.hide()
+		
+		await get_tree().create_timer(0.5).timeout
+		
+		current_idx += 1
+		if current_idx >= vocab_data.size():
+			show_summary()
+		else:
+			show_reading_phase()
+			
+	is_checking = false
 
 func _erase_stroke_at(pos: Vector2):
 	var to_remove = []
