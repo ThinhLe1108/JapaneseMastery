@@ -32,7 +32,7 @@ func _ready():
 		
 	setup_ui()
 	
-	word_label.text = "Đang tải dữ liệu Quantum..."
+	word_label.text = "Loading Quantum data..."
 	word_label.show()
 	prompt_label.hide()
 	options_container.hide()
@@ -102,7 +102,7 @@ func setup_ui():
 	add_child(bg)
 	
 	btn_back = Button.new()
-	btn_back.text = "Hủy & Trở về Menu"
+	btn_back.text = "Cancel & Main Menu"
 	btn_back.position = Vector2(20, 20)
 	btn_back.custom_minimum_size = Vector2(200, 40)
 	btn_back.pressed.connect(func(): Global.goto_scene("res://scenes/Main.tscn"))
@@ -140,7 +140,7 @@ func setup_ui():
 	add_child(options_container)
 	
 	btn_submit = Button.new()
-	btn_submit.text = "Xác nhận"
+	btn_submit.text = "Confirm"
 	btn_submit.custom_minimum_size = Vector2(200, 60)
 	btn_submit.add_theme_font_size_override("font_size", 24)
 	btn_submit.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -166,7 +166,7 @@ func next_question():
 		return
 		
 	state = "PLAYING"
-	progress_label.text = "Câu %d / %d" % [current_q_idx + 1, question_pool.size()]
+	progress_label.text = "Question %d / %d" % [current_q_idx + 1, question_pool.size()]
 	question_start_time = Time.get_ticks_msec()
 	
 	var q = question_pool[current_q_idx]
@@ -181,19 +181,19 @@ func next_question():
 		for v in vocab_data:
 			if v["romaji"] != correct_ans and v["romaji"] != "": pool.append(v["romaji"])
 		word_label.text = vocab["kana"]
-		prompt_label.text = "Chọn cách đọc:"
+		prompt_label.text = "Choose the reading:"
 	elif q_type == "meaning":
 		correct_ans = vocab["meaning"]
 		for v in vocab_data:
 			if v.get("meaning", "") != correct_ans and v.get("meaning", "") != "": pool.append(v["meaning"])
 		word_label.text = vocab["kana"]
-		prompt_label.text = "Nghĩa của từ này là gì?"
+		prompt_label.text = "What is the meaning?"
 	else:
 		correct_ans = vocab["kana"]
 		for v in vocab_data:
 			if v["kana"] != correct_ans and v["kana"] != "": pool.append(v["kana"])
 		word_label.text = vocab["romaji"]
-		prompt_label.text = "Chọn mặt chữ:"
+		prompt_label.text = "Choose the character:"
 		
 	pool.shuffle()
 	var options = []
@@ -226,7 +226,7 @@ func next_question():
 	prompt_label.show()
 	options_container.show()
 	
-	btn_submit.text = "Xác nhận"
+	btn_submit.text = "Confirm"
 	btn_submit.disabled = true
 	btn_submit.show()
 	
@@ -262,7 +262,7 @@ func _on_submit_pressed():
 		
 		if not is_correct:
 			is_weak = true # Sai = Chắc chắn sụp đổ về trạng thái 0
-			status_str = "sai"
+			status_str = "wrong"
 		else:
 			# Mô phỏng Gói Sóng Gauss (Gaussian Wave Packet) trong Cơ học lượng tử
 			var p_know = 1.0
@@ -274,10 +274,10 @@ func _on_submit_pressed():
 				var collapse_val = randf() # Biến số lượng tử (0.0 -> 1.0)
 				if collapse_val > p_know:
 					is_weak = true # Sụp đổ về trạng thái "Quên" (Guessing)
-					status_str = "đoán mò"
+					status_str = "guessing"
 				else:
 					is_weak = true # Do dự nhưng hàm sóng chưa sụp đổ hẳn
-					status_str = "do dự"
+					status_str = "hesitant"
 					
 		if is_weak:
 			var vocab_word = current_q["word_jp"]
@@ -286,10 +286,10 @@ func _on_submit_pressed():
 				if w["word"] == vocab_word:
 					found = true
 					var current_status = w.get("status", "")
-					if status_str == "sai":
-						w["status"] = "sai" # Sai ghi đè tất cả
-					elif status_str == "đoán mò" and current_status == "do dự":
-						w["status"] = "đoán mò" # Đoán mò ghi đè do dự
+					if status_str == "wrong":
+						w["status"] = "wrong" # Sai ghi đè tất cả
+					elif status_str == "guessing" and current_status == "hesitant":
+						w["status"] = "guessing" # Đoán mò ghi đè do dự
 					break
 					
 			if not found:
@@ -298,11 +298,11 @@ func _on_submit_pressed():
 		if is_correct:
 			times_taken.append(time_taken)
 			score += 1
-			feedback_label.text = "Chính xác!"
+			feedback_label.text = "Correct!"
 			feedback_label.modulate = Color(0.4, 1.0, 0.4)
 			Global.add_coins(5)
 		else:
-			feedback_label.text = "Sai rồi! Đáp án: " + current_q["correct"]
+			feedback_label.text = "Wrong! Answer: " + current_q["correct"]
 			feedback_label.modulate = Color(1.0, 0.4, 0.4)
 			
 			# Cơ chế Duolingo: Sai thì bị đẩy xuống cuối hàng đợi để làm lại!
@@ -313,7 +313,7 @@ func _on_submit_pressed():
 		prompt_label.hide()
 		options_container.hide()
 		
-		btn_submit.text = "Tiếp theo"
+		btn_submit.text = "Next"
 		feedback_label.show()
 		
 	elif state == "RESULT":
@@ -336,13 +336,13 @@ func show_summary():
 	
 	var summary_text = ""
 	if weak_words.size() == 0:
-		summary_text = "HOÀN HẢO!\nBạn đã làm đúng 100% và không hề do dự!\nĐiểm: %d/%d\n(Thưởng thêm 500 G-Coins)" % [score, question_pool.size()]
+		summary_text = "PERFECT!\nYou scored 100% with no hesitation!\nScore: %d/%d\n(Bonus 500 G-Coins)" % [score, question_pool.size()]
 		feedback_label.modulate = Color(0.8, 0.4, 1.0)
 		Global.add_coins(500)
 	else:
-		summary_text = "PHÂN TÍCH QUANTUM\n"
-		summary_text += "Điểm: %d/%d. Số từ sai hoặc do dự: %d\n" % [score, question_pool.size(), weak_words.size()]
-		summary_text += "Bạn cần học lại: "
+		summary_text = "QUANTUM ANALYSIS\n"
+		summary_text += "Score: %d/%d. Wrong or hesitant words: %d\n" % [score, question_pool.size(), weak_words.size()]
+		summary_text += "Words to review: "
 		
 		var display_words = []
 		for w in weak_words:
@@ -354,12 +354,12 @@ func show_summary():
 				if i < word_str.length() - 1:
 					nobr += String.chr(0x2060)
 					
-			if w.get("status", "") == "đoán mò":
-				nobr += " (Đoán mò)"
-			elif w.get("status", "") == "do dự":
-				nobr += " (Do dự)"
-			elif w.get("status", "") == "sai":
-				nobr += " (Sai)"
+			if w.get("status", "") == "guessing":
+				nobr += " (Guessing)"
+			elif w.get("status", "") == "hesitant":
+				nobr += " (Hesitant)"
+			elif w.get("status", "") == "wrong":
+				nobr += " (Wrong)"
 				
 			display_words.append(nobr)
 			
@@ -369,4 +369,4 @@ func show_summary():
 		Global.add_coins(100) # Small reward
 		
 	feedback_label.text = summary_text
-	btn_submit.text = "Về Menu"
+	btn_submit.text = "Main Menu"

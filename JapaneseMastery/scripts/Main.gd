@@ -149,7 +149,7 @@ func setup_ui():
 	vbox.add_theme_constant_override("separation", 15)
 	add_child(vbox)
 	
-	btn_placement = create_menu_btn("Bài Test Lên Cấp")
+	btn_placement = create_menu_btn("Level-Up Test")
 	btn_placement.pressed.connect(_on_placement_pressed)
 	vbox.add_child(btn_placement)
 	
@@ -157,39 +157,39 @@ func setup_ui():
 	btn_quantum.pressed.connect(_on_quantum_pressed)
 	vbox.add_child(btn_quantum)
 	
-	btn_solo = create_menu_btn("Học (Level X)")
+	btn_solo = create_menu_btn("Solo Learning (Level X)")
 	btn_solo.pressed.connect(_on_solo_pressed)
 	vbox.add_child(btn_solo)
 	
-	btn_pvp = create_menu_btn("Đấu trường PvP (Khóa)")
+	btn_pvp = create_menu_btn("PvP Arena (Locked)")
 	btn_pvp.disabled = true
 	vbox.add_child(btn_pvp)
 	
-	btn_shop = create_menu_btn("Cửa hàng (Khóa)")
+	btn_shop = create_menu_btn("Shop (Locked)")
 	btn_shop.disabled = true
 	vbox.add_child(btn_shop)
 	
-	btn_create_test = create_menu_btn("📝 Tạo Bài Test Mới")
+	btn_create_test = create_menu_btn("📝 Create New Test")
 	btn_create_test.pressed.connect(_on_create_test_pressed)
 	btn_create_test.hide()
 	vbox.add_child(btn_create_test)
 	
-	btn_enter_test_code = create_menu_btn("🔑 Nhập Mã Bài Test")
+	btn_enter_test_code = create_menu_btn("🔑 Enter Test Code")
 	btn_enter_test_code.pressed.connect(_on_enter_test_code_pressed)
 	btn_enter_test_code.hide()
 	vbox.add_child(btn_enter_test_code)
 	
-	btn_admin = create_menu_btn("⚙️ Bảng Điều Khiển Admin")
+	btn_admin = create_menu_btn("⚙️ Admin Control Panel")
 	btn_admin.pressed.connect(func(): Global.goto_scene("res://scenes/AdminPanel.tscn"))
 	btn_admin.hide()
 	vbox.add_child(btn_admin)
 	
-	btn_mod = create_menu_btn("🛡️ Bảng Kiểm Duyệt (Moderator)")
+	btn_mod = create_menu_btn("🛡️ Moderation Panel")
 	btn_mod.pressed.connect(func(): Global.goto_scene("res://scenes/ModeratorPanel.tscn"))
 	btn_mod.hide()
 	vbox.add_child(btn_mod)
 	
-	btn_designer = create_menu_btn("🎨 Đăng Bán Shop (Designer)")
+	btn_designer = create_menu_btn("🎨 Designer Shop")
 	btn_designer.pressed.connect(func(): Global.goto_scene("res://scenes/DesignerPanel.tscn"))
 	btn_designer.hide()
 	vbox.add_child(btn_designer)
@@ -274,13 +274,13 @@ func refresh_data():
 	coin_label.text = "G-Coins: " + str(Global.get_coins())
 	
 	btn_placement.disabled = false
-	btn_placement.text = "Bài Test Lên Cấp (Lv %d -> %d)" % [level, level + 1]
+	btn_placement.text = "Level-Up Test (Lv %d -> %d)" % [level, level + 1]
 	var start_level = ((level - 1) / 5) * 5 + 1
 	var max_lvl = start_level + 4
-	btn_quantum.text = "Bài Test Quantum"
+	btn_quantum.text = "Quantum Test"
 	
 	btn_solo.disabled = false
-	btn_solo.text = "Học (Level %d)" % level
+	btn_solo.text = "Learn (Level %d)" % level
 	
 	var account = Database.get_account()
 	var role = ""
@@ -363,19 +363,19 @@ func _on_quantum_pressed():
 	quantum_option_btn.clear()
 	var level = Global.get_current_level()
 	quantum_option_btn.add_item("Quantum Test (Level %d)" % level, 1)
-	quantum_option_btn.add_item("Test Toàn Diện (Level 1 - %d)" % level, 2)
+	quantum_option_btn.add_item("Comprehensive Test (Level 1 - %d)" % level, 2)
 	
 	quantum_dialog.popup_centered()
 
 func _setup_quantum_dialog():
 	quantum_dialog = ConfirmationDialog.new()
-	quantum_dialog.title = "Chọn Chế Độ Quantum Test"
+	quantum_dialog.title = "Select Quantum Test Mode"
 	
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
 	
 	var lbl = Label.new()
-	lbl.text = "Bạn muốn làm bài test theo chế độ nào?"
+	lbl.text = "Which mode do you want to play?"
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(lbl)
 	
@@ -408,13 +408,13 @@ func _on_solo_pressed():
 
 func _setup_solo_dialog():
 	solo_dialog = ConfirmationDialog.new()
-	solo_dialog.title = "Chọn Cấp Độ"
+	solo_dialog.title = "Select Level"
 	
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
 	
 	var lbl = Label.new()
-	lbl.text = "Bạn muốn học/ôn lại cấp độ nào?"
+	lbl.text = "Which level do you want to learn/review?"
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(lbl)
 	
@@ -434,7 +434,7 @@ func _on_solo_confirmed():
 	Global.goto_scene("res://scenes/SoloLearning.tscn")
 	
 func _on_create_test_pressed():
-	print("Chuyển đến màn hình Quản lý/Tạo bài Test")
+	print("Switching to Test Manager...")
 	Global.goto_scene("res://scenes/SenseiTestManager.tscn")
 	
 func _on_enter_test_code_pressed():
@@ -445,18 +445,18 @@ func _on_enter_test_code_pressed():
 
 func _setup_code_dialog():
 	enter_code_dialog = AcceptDialog.new()
-	enter_code_dialog.title = "Vào Bài Test"
+	enter_code_dialog.title = "Enter Test"
 	
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
 	
 	var lbl = Label.new()
-	lbl.text = "Vui lòng nhập mã bài Test của Sensei:"
+	lbl.text = "Please enter the Sensei's Test Code:"
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(lbl)
 	
 	code_input = LineEdit.new()
-	code_input.placeholder_text = "Ví dụ: 12345"
+	code_input.placeholder_text = "Example: 12345"
 	code_input.custom_minimum_size = Vector2(250, 40)
 	vbox.add_child(code_input)
 	
@@ -470,9 +470,9 @@ func _on_test_code_confirmed():
 	var code = code_input.text.strip_edges()
 	if code.is_empty():
 		return
-	print("Bắt đầu lấy bài test với mã: ", code)
+	print("Fetching test with code: ", code)
 	
-	btn_enter_test_code.text = "Đang tìm..."
+	btn_enter_test_code.text = "Searching..."
 	btn_enter_test_code.disabled = true
 	
 	var req = HTTPRequest.new()
@@ -485,7 +485,7 @@ func _on_test_code_confirmed():
 
 func _on_test_fetch_completed(res, code, headers, body, req: HTTPRequest):
 	req.queue_free()
-	btn_enter_test_code.text = "🔑 Nhập Mã Bài Test"
+	btn_enter_test_code.text = "🔑 Enter Test Code"
 	btn_enter_test_code.disabled = false
 	
 	if code == 200:
@@ -495,18 +495,18 @@ func _on_test_fetch_completed(res, code, headers, body, req: HTTPRequest):
 			var user_lvl = Global.get_current_level()
 			var min_lvl = test_data.get("minLevel", 1)
 			if user_lvl < min_lvl:
-				OS.alert("Level của bạn (%d) không đủ để làm bài test này (yêu cầu Level %d)." % [user_lvl, min_lvl], "Không đủ điều kiện")
+				OS.alert("Your level (%d) is not high enough for this test (requires Level %d)." % [user_lvl, min_lvl], "Ineligible")
 				return
 			
 			Global.current_custom_test = test_data
 			Global.goto_scene("res://scenes/CustomTestRoom.tscn")
 		else:
-			OS.alert("Dữ liệu bài test không hợp lệ.", "Lỗi")
+			OS.alert("Invalid test data.", "Error")
 	elif code == 400:
 		var error_msg = body.get_string_from_utf8()
-		OS.alert(error_msg, "Không thể vào")
+		OS.alert(error_msg, "Cannot enter")
 	else:
-		OS.alert("Không tìm thấy bài test với mã vừa nhập, hoặc mã không hợp lệ.", "Lỗi (" + str(code) + ")")
+		OS.alert("Test code not found or invalid.", "Error (" + str(code) + ")")
 
 func _on_logout_pressed():
 	Network.logout()

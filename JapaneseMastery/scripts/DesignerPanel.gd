@@ -28,7 +28,7 @@ func _setup_ui():
 	
 	# Title
 	var title = Label.new()
-	title.text = "BẢNG ĐIỀU KHIỂN DESIGNER"
+	title.text = "DESIGNER CONTROL PANEL"
 	title.add_theme_font_size_override("font_size", 36)
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -37,7 +37,7 @@ func _setup_ui():
 	
 	# Back Button
 	var btn_back = Button.new()
-	btn_back.text = "Trở về Menu"
+	btn_back.text = "Back to Menu"
 	btn_back.position = Vector2(20, 20)
 	btn_back.custom_minimum_size = Vector2(150, 40)
 	btn_back.pressed.connect(func(): Global.goto_scene("res://scenes/Main.tscn"))
@@ -62,7 +62,7 @@ func _setup_ui():
 	
 	# Form Section
 	var form_title = Label.new()
-	form_title.text = "--- ĐĂNG BÁN VẬT PHẨM MỚI ---"
+	form_title.text = "--- SELL NEW ITEM ---"
 	form_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(form_title)
 	
@@ -71,12 +71,12 @@ func _setup_ui():
 	vbox.add_child(form_hbox)
 	
 	name_input = LineEdit.new()
-	name_input.placeholder_text = "Tên vật phẩm (VD: Khung rồng lửa)"
+	name_input.placeholder_text = "Item Name (e.g., Fire Dragon Frame)"
 	name_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	form_hbox.add_child(name_input)
 	
 	price_input = LineEdit.new()
-	price_input.placeholder_text = "Giá bán (G-Coins)"
+	price_input.placeholder_text = "Price (G-Coins)"
 	price_input.custom_minimum_size = Vector2(150, 0)
 	form_hbox.add_child(price_input)
 	
@@ -88,7 +88,7 @@ func _setup_ui():
 	form_hbox.add_child(type_opt)
 	
 	btn_add = Button.new()
-	btn_add.text = "Đăng Bán"
+	btn_add.text = "Sell"
 	btn_add.custom_minimum_size = Vector2(120, 0)
 	btn_add.pressed.connect(_on_add_pressed)
 	form_hbox.add_child(btn_add)
@@ -98,13 +98,13 @@ func _setup_ui():
 	
 	# List Section
 	var list_title = Label.new()
-	list_title.text = "--- DANH SÁCH VẬT PHẨM CỦA BẠN ---"
+	list_title.text = "--- YOUR ITEMS LIST ---"
 	list_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(list_title)
 	
 	var filter_hbox = HBoxContainer.new()
 	search_input = LineEdit.new()
-	search_input.placeholder_text = "🔍 Tìm Tên / Loại..."
+	search_input.placeholder_text = "🔍 Search Name / Type..."
 	search_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	search_input.text_changed.connect(_on_search_changed)
 	filter_hbox.add_child(search_input)
@@ -121,12 +121,12 @@ func _setup_ui():
 	var page_hbox = HBoxContainer.new()
 	page_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_prev = Button.new()
-	btn_prev.text = "◀ Trước"
+	btn_prev.text = "◀ Prev"
 	btn_prev.pressed.connect(_change_page.bind(-1))
 	lbl_page = Label.new()
 	lbl_page.text = "1 / 1"
 	btn_next = Button.new()
-	btn_next.text = "Sau ▶"
+	btn_next.text = "Next ▶"
 	btn_next.pressed.connect(_change_page.bind(1))
 	page_hbox.add_child(btn_prev)
 	page_hbox.add_child(lbl_page)
@@ -151,19 +151,19 @@ func api_request(endpoint: String, method: int, body_str: String, callback: Call
 
 func _fetch_items():
 	var user_id = Database.get_account().get("user_id", -1)
-	status_label.text = "Đang tải vật phẩm..."
+	status_label.text = "Loading items..."
 	api_request("/api/designer/%d/items" % user_id, HTTPClient.METHOD_GET, "", _on_items_fetched)
 
 func _on_items_fetched(code, body):
 	if code == 200:
-		status_label.text = "Tải vật phẩm thành công!"
+		status_label.text = "Items loaded successfully!"
 		var json = JSON.new()
 		if json.parse(body.get_string_from_utf8()) == OK:
 			all_items = json.data
 			current_page = 0
 			_update_list_ui()
 	else:
-		status_label.text = "Lỗi tải vật phẩm: " + str(code)
+		status_label.text = "Error loading items: " + str(code)
 
 func _on_search_changed(t: String):
 	current_page = 0
@@ -211,12 +211,12 @@ func _update_list_ui():
 		row.add_child(lbl_name)
 		
 		var lbl_type = Label.new()
-		lbl_type.text = "Loại: " + itm.get("type", "")
+		lbl_type.text = "Type: " + itm.get("type", "")
 		lbl_type.custom_minimum_size = Vector2(150, 0)
 		row.add_child(lbl_type)
 		
 		var lbl_price = Label.new()
-		lbl_price.text = "Giá: %d GC" % int(itm.get("price", 0))
+		lbl_price.text = "Price: %d GC" % int(itm.get("price", 0))
 		lbl_price.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 		lbl_price.custom_minimum_size = Vector2(100, 0)
 		row.add_child(lbl_price)
@@ -224,10 +224,10 @@ func _update_list_ui():
 		var lbl_status = Label.new()
 		var is_approved = itm.get("isApproved", false)
 		if is_approved:
-			lbl_status.text = "Đã duyệt (Đang bán)"
+			lbl_status.text = "Approved (On Sale)"
 			lbl_status.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 		else:
-			lbl_status.text = "Đang chờ duyệt"
+			lbl_status.text = "Pending Approval"
 			lbl_status.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
 		row.add_child(lbl_status)
 		
@@ -238,16 +238,16 @@ func _on_add_pressed():
 	var p_str = price_input.text.strip_edges()
 	
 	if n.is_empty() or p_str.is_empty():
-		status_label.text = "Vui lòng nhập tên và giá."
+		status_label.text = "Please enter a name and price."
 		return
 		
 	if not p_str.is_valid_int():
-		status_label.text = "Giá phải là một số nguyên dương hợp lệ."
+		status_label.text = "Price must be a valid positive integer."
 		return
 		
 	var price_val = p_str.to_int()
 	if price_val < 0:
-		status_label.text = "Giá không được là số âm."
+		status_label.text = "Price cannot be negative."
 		return
 		
 	var user_id = Database.get_account().get("user_id", -1)
@@ -257,13 +257,13 @@ func _on_add_pressed():
 		"type": type_opt.get_item_text(type_opt.selected)
 	}
 	
-	status_label.text = "Đang đăng bán..."
+	status_label.text = "Selling..."
 	api_request("/api/designer/%d/items" % user_id, HTTPClient.METHOD_POST, JSON.stringify(dict), func(code, body):
 		if code == 200:
-			status_label.text = "Đăng thành công! Vui lòng đợi Moderator duyệt."
+			status_label.text = "Successfully submitted! Please wait for Moderator approval."
 			name_input.text = ""
 			price_input.text = ""
 			_fetch_items()
 		else:
-			status_label.text = "Lỗi đăng vật phẩm: " + body.get_string_from_utf8()
+			status_label.text = "Error submitting item: " + body.get_string_from_utf8()
 	)

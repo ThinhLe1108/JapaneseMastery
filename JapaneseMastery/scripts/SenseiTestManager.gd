@@ -34,7 +34,7 @@ func _setup_ui():
 	add_child(bg)
 	
 	var title = Label.new()
-	title.text = "QUẢN LÝ BÀI TEST TÙY CHỈNH"
+	title.text = "CUSTOM TEST MANAGER"
 	title.add_theme_font_size_override("font_size", 42)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
@@ -42,14 +42,14 @@ func _setup_ui():
 	add_child(title)
 	
 	var btn_back = Button.new()
-	btn_back.text = "Trở về"
+	btn_back.text = "Back"
 	btn_back.custom_minimum_size = Vector2(120, 50)
 	btn_back.position = Vector2(30, 30)
 	btn_back.pressed.connect(func(): Global.goto_scene("res://scenes/Main.tscn"))
 	add_child(btn_back)
 	
 	var btn_create = Button.new()
-	btn_create.text = "+ Tạo Bài Test Mới"
+	btn_create.text = "+ Create New Test"
 	btn_create.custom_minimum_size = Vector2(250, 50)
 	btn_create.position = Vector2(1280 - 280, 30) # Assuming 1280 width
 	btn_create.pressed.connect(_on_create_new_pressed)
@@ -69,7 +69,7 @@ func _setup_ui():
 	
 	search_input = LineEdit.new()
 	search_input.custom_minimum_size = Vector2(300, 40)
-	search_input.placeholder_text = "🔍 Tìm kiếm theo Mã Đề / Tên..."
+	search_input.placeholder_text = "🔍 Search by Code / Title..."
 	search_input.text_changed.connect(_on_search_changed)
 	filter_hbox.add_child(search_input)
 	
@@ -94,7 +94,7 @@ func _setup_ui():
 	add_child(page_hbox)
 	
 	btn_prev = Button.new()
-	btn_prev.text = "◀ Trước"
+	btn_prev.text = "◀ Prev"
 	btn_prev.custom_minimum_size = Vector2(80, 40)
 	btn_prev.pressed.connect(func(): _change_page(-1))
 	page_hbox.add_child(btn_prev)
@@ -104,7 +104,7 @@ func _setup_ui():
 	page_hbox.add_child(lbl_page)
 	
 	btn_next = Button.new()
-	btn_next.text = "Sau ▶"
+	btn_next.text = "Next ▶"
 	btn_next.custom_minimum_size = Vector2(80, 40)
 	btn_next.pressed.connect(func(): _change_page(1))
 	page_hbox.add_child(btn_next)
@@ -114,7 +114,7 @@ func _setup_ui():
 
 func _setup_attempts_dialog():
 	attempts_dialog = AcceptDialog.new()
-	attempts_dialog.title = "Lịch sử làm bài"
+	attempts_dialog.title = "Attempt History"
 	
 	var scroll = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(400, 300)
@@ -129,26 +129,26 @@ func _setup_attempts_dialog():
 
 func _setup_dialog():
 	create_dialog = AcceptDialog.new()
-	create_dialog.title = "Thông tin Bài Test"
-	create_dialog.ok_button_text = "Lưu lại"
+	create_dialog.title = "Test Information"
+	create_dialog.ok_button_text = "Save"
 	create_dialog.confirmed.connect(_on_dialog_confirmed)
 	
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
 	
 	title_input = LineEdit.new()
-	title_input.placeholder_text = "Tên bài Test (VD: Kiểm tra N5)"
+	title_input.placeholder_text = "Test Title (e.g., N5 Test)"
 	title_input.custom_minimum_size = Vector2(300, 40)
 	vbox.add_child(title_input)
 	
 	code_input = LineEdit.new()
-	code_input.placeholder_text = "Mã đề (VD: TEST-01)"
+	code_input.placeholder_text = "Test Code (e.g., TEST-01)"
 	code_input.custom_minimum_size = Vector2(300, 40)
 	vbox.add_child(code_input)
 	
 	var hbox_lvl = HBoxContainer.new()
 	var lbl_lvl = Label.new()
-	lbl_lvl.text = "Level tối thiểu:"
+	lbl_lvl.text = "Min Level:"
 	lbl_lvl.custom_minimum_size = Vector2(150, 0)
 	hbox_lvl.add_child(lbl_lvl)
 	level_input = SpinBox.new()
@@ -159,7 +159,7 @@ func _setup_dialog():
 	
 	var hbox1 = HBoxContainer.new()
 	var lbl1 = Label.new()
-	lbl1.text = "Thưởng G-Coin:"
+	lbl1.text = "G-Coin Reward:"
 	lbl1.custom_minimum_size = Vector2(150, 0)
 	hbox1.add_child(lbl1)
 	coin_input = SpinBox.new()
@@ -169,7 +169,7 @@ func _setup_dialog():
 	
 	var hbox2 = HBoxContainer.new()
 	var lbl2 = Label.new()
-	lbl2.text = "Số lần tối đa (<10):"
+	lbl2.text = "Max Attempts (<10):"
 	lbl2.custom_minimum_size = Vector2(150, 0)
 	hbox2.add_child(lbl2)
 	attempts_input = SpinBox.new()
@@ -180,7 +180,7 @@ func _setup_dialog():
 	vbox.add_child(hbox2)
 	
 	var q_label = Label.new()
-	q_label.text = "Danh sách Câu hỏi:"
+	q_label.text = "Question List:"
 	vbox.add_child(q_label)
 	
 	var q_scroll = ScrollContainer.new()
@@ -192,7 +192,7 @@ func _setup_dialog():
 	q_scroll.add_child(questions_container)
 	
 	var btn_add_q = Button.new()
-	btn_add_q.text = "+ Thêm Từ / Câu hỏi"
+	btn_add_q.text = "+ Add Question"
 	btn_add_q.pressed.connect(_add_question_row)
 	vbox.add_child(btn_add_q)
 	
@@ -218,13 +218,13 @@ func _add_question_row(q_data: Dictionary = {}):
 	
 	var row1 = HBoxContainer.new()
 	var q_input = LineEdit.new()
-	q_input.placeholder_text = "Nội dung câu hỏi"
+	q_input.placeholder_text = "Question content"
 	q_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	q_input.text = q_data.get("questionText", "")
 	row1.add_child(q_input)
 	
 	var btn_del_q = Button.new()
-	btn_del_q.text = "Xóa"
+	btn_del_q.text = "Delete"
 	btn_del_q.modulate = Color(1.0, 0.4, 0.4)
 	btn_del_q.pressed.connect(func(): panel.queue_free())
 	row1.add_child(btn_del_q)
@@ -232,13 +232,13 @@ func _add_question_row(q_data: Dictionary = {}):
 	
 	var row2 = HBoxContainer.new()
 	var a_input = LineEdit.new()
-	a_input.placeholder_text = "Đáp án A"
+	a_input.placeholder_text = "Answer A"
 	a_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	a_input.text = q_data.get("answerA", "")
 	row2.add_child(a_input)
 	
 	var b_input = LineEdit.new()
-	b_input.placeholder_text = "Đáp án B"
+	b_input.placeholder_text = "Answer B"
 	b_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b_input.text = q_data.get("answerB", "")
 	row2.add_child(b_input)
@@ -246,13 +246,13 @@ func _add_question_row(q_data: Dictionary = {}):
 	
 	var row3 = HBoxContainer.new()
 	var c_input = LineEdit.new()
-	c_input.placeholder_text = "Đáp án C"
+	c_input.placeholder_text = "Answer C"
 	c_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	c_input.text = q_data.get("answerC", "")
 	row3.add_child(c_input)
 	
 	var d_input = LineEdit.new()
-	d_input.placeholder_text = "Đáp án D"
+	d_input.placeholder_text = "Answer D"
 	d_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	d_input.text = q_data.get("answerD", "")
 	row3.add_child(d_input)
@@ -260,7 +260,7 @@ func _add_question_row(q_data: Dictionary = {}):
 	
 	var row4 = HBoxContainer.new()
 	var lbl = Label.new()
-	lbl.text = "Đáp án đúng:"
+	lbl.text = "Correct Answer:"
 	row4.add_child(lbl)
 	
 	var correct_input = OptionButton.new()
@@ -290,7 +290,7 @@ func _add_question_row(q_data: Dictionary = {}):
 	questions_container.add_child(panel)
 
 func _fetch_tests():
-	status_label.text = "Đang tải dữ liệu..."
+	status_label.text = "Loading data..."
 	for child in list_container.get_children():
 		child.queue_free()
 		
@@ -314,7 +314,7 @@ func _on_fetch_completed(res, code, headers, body, req: HTTPRequest):
 			current_page = 0
 			_update_list_ui()
 	else:
-		status_label.text = "Lỗi tải dữ liệu: " + str(code)
+		status_label.text = "Error loading data: " + str(code)
 
 func _on_search_changed(new_text: String):
 	current_page = 0
@@ -340,7 +340,7 @@ func _update_list_ui():
 				filtered.append(test)
 				
 	if filtered.is_empty():
-		status_label.text = "Bạn chưa tạo bài Test nào phù hợp."
+		status_label.text = "No matching tests found."
 		btn_prev.disabled = true
 		btn_next.disabled = true
 		lbl_page.text = "0 / 0"
@@ -379,25 +379,25 @@ func _add_test_item(item: Dictionary):
 	panel.add_child(hbox)
 	
 	var info = Label.new()
-	info.text = "Mã: %s | %s (Min Lv: %d)\nThưởng: %d G-Coin | Tối đa: %d lần làm" % [item.get("testCode", "N/A"), item.get("title", ""), int(item.get("minLevel", 1)), int(item.get("rewardGcoin", 0)), int(item.get("maxAttempts", 0))]
+	info.text = "Code: %s | %s (Min Lv: %d)\nReward: %d G-Coin | Max: %d attempts" % [item.get("testCode", "N/A"), item.get("title", ""), int(item.get("minLevel", 1)), int(item.get("rewardGcoin", 0)), int(item.get("maxAttempts", 0))]
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(info)
 	
 	var btn_view = Button.new()
-	btn_view.text = "Lịch sử"
+	btn_view.text = "History"
 	btn_view.custom_minimum_size = Vector2(80, 0)
 	btn_view.modulate = Color(0.4, 1.0, 0.4)
 	btn_view.pressed.connect(_on_view_attempts_pressed.bind(item))
 	hbox.add_child(btn_view)
 	
 	var btn_edit = Button.new()
-	btn_edit.text = "Sửa"
+	btn_edit.text = "Edit"
 	btn_edit.custom_minimum_size = Vector2(80, 0)
 	btn_edit.pressed.connect(_on_edit_pressed.bind(item))
 	hbox.add_child(btn_edit)
 	
 	var btn_del = Button.new()
-	btn_del.text = "Xóa"
+	btn_del.text = "Delete"
 	btn_del.custom_minimum_size = Vector2(80, 0)
 	btn_del.modulate = Color(1.0, 0.4, 0.4)
 	btn_del.pressed.connect(_on_delete_pressed.bind(item["id"]))
@@ -413,7 +413,7 @@ func _on_view_attempts_pressed(item: Dictionary):
 		child.queue_free()
 		
 	var lbl = Label.new()
-	lbl.text = "Đang tải dữ liệu..."
+	lbl.text = "Loading data..."
 	attempts_container.add_child(lbl)
 	attempts_dialog.popup_centered()
 	
@@ -431,21 +431,21 @@ func _on_view_attempts_pressed(item: Dictionary):
 				var attempts = json.data
 				if attempts.is_empty():
 					var empty_lbl = Label.new()
-					empty_lbl.text = "Chưa có ai làm bài test này."
+					empty_lbl.text = "No attempts yet."
 					attempts_container.add_child(empty_lbl)
 				else:
 					for attempt in attempts:
 						var a_lbl = Label.new()
-						var status = "✅ ĐẠT" if attempt.get("passed", false) else "❌ TRƯỢT"
-						a_lbl.text = "- Player: %s | Câu đúng: %d/%d | %s | %s" % [attempt.get("playerName", "Unknown"), attempt.get("score", 0), total_q, status, attempt.get("attemptTime", "").substr(0, 10)]
+						var status = "✅ PASS" if attempt.get("passed", false) else "❌ FAIL"
+						a_lbl.text = "- Player: %s | Correct: %d/%d | %s | %s" % [attempt.get("playerName", "Unknown"), attempt.get("score", 0), total_q, status, attempt.get("attemptTime", "").substr(0, 10)]
 						attempts_container.add_child(a_lbl)
 			else:
 				var err = Label.new()
-				err.text = "Lỗi phân tích dữ liệu"
+				err.text = "Data parsing error"
 				attempts_container.add_child(err)
 		else:
 			var err = Label.new()
-			err.text = "Lỗi lấy dữ liệu: " + str(code)
+			err.text = "Error fetching data: " + str(code)
 			attempts_container.add_child(err)
 	)
 	var headers = PackedStringArray(["Authorization: Bearer " + Network.jwt_token])
@@ -545,7 +545,7 @@ func _on_save_completed(res, code, headers, body, req: HTTPRequest):
 	if code == 200:
 		_fetch_tests()
 	else:
-		status_label.text = "Lỗi lưu dữ liệu: " + str(code)
+		status_label.text = "Error saving data: " + str(code)
 
 func _on_delete_pressed(id: int):
 	var user_id = Database.get_account().get("user_id", -1)
