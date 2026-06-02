@@ -26,7 +26,7 @@ func _ready():
 	var level = Global.get_current_level()
 	setup_ui()
 	
-	word_label.text = "Đang tải dữ liệu..."
+	word_label.text = "Loading data..."
 	word_label.show()
 	prompt_label.hide()
 	options_container.hide()
@@ -101,7 +101,7 @@ func setup_ui():
 	add_child(bg)
 	
 	btn_back = Button.new()
-	btn_back.text = "Hủy & Trở về Menu"
+	btn_back.text = "Cancel & Main Menu"
 	btn_back.position = Vector2(20, 20)
 	btn_back.custom_minimum_size = Vector2(200, 40)
 	btn_back.pressed.connect(func(): Global.goto_scene("res://scenes/Main.tscn"))
@@ -139,7 +139,7 @@ func setup_ui():
 	add_child(options_container)
 	
 	btn_submit = Button.new()
-	btn_submit.text = "Xác nhận"
+	btn_submit.text = "Confirm"
 	btn_submit.custom_minimum_size = Vector2(200, 60)
 	btn_submit.add_theme_font_size_override("font_size", 24)
 	btn_submit.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -165,7 +165,7 @@ func next_question():
 		return
 		
 	state = "PLAYING"
-	progress_label.text = "Câu %d / %d" % [current_q_idx + 1, question_pool.size()]
+	progress_label.text = "Question %d / %d" % [current_q_idx + 1, question_pool.size()]
 	
 	var q_info = question_pool[current_q_idx]
 	var vocab = q_info["vocab"]
@@ -183,7 +183,7 @@ func next_question():
 			if vm == "": vm = v.get("romaji", "N/A")
 			if vm != correct_ans and not pool.has(vm): pool.append(vm)
 		word_label.text = vocab.get("kana", "")
-		prompt_label.text = "Chọn nghĩa của từ:"
+		prompt_label.text = "Choose the meaning:"
 	else:
 		var q_type = ["kana_to_romaji", "romaji_to_kana"][randi() % 2]
 		if q_type == "kana_to_romaji":
@@ -191,13 +191,13 @@ func next_question():
 			for v in vocab_data:
 				if v["romaji"] != correct_ans and not pool.has(v["romaji"]): pool.append(v["romaji"])
 			word_label.text = vocab["kana"]
-			prompt_label.text = "Chọn cách đọc:"
+			prompt_label.text = "Choose the reading:"
 		else:
 			correct_ans = vocab["kana"]
 			for v in vocab_data:
 				if v["kana"] != correct_ans and not pool.has(v["kana"]): pool.append(v["kana"])
 			word_label.text = vocab["romaji"]
-			prompt_label.text = "Chọn mặt chữ:"
+			prompt_label.text = "Choose the character:"
 		
 	pool.shuffle()
 	var options = []
@@ -229,7 +229,7 @@ func next_question():
 	prompt_label.show()
 	options_container.show()
 	
-	btn_submit.text = "Xác nhận"
+	btn_submit.text = "Confirm"
 	btn_submit.disabled = true
 	btn_submit.show()
 	
@@ -254,11 +254,11 @@ func _on_submit_pressed():
 		
 		if is_correct:
 			score += 1
-			feedback_label.text = "Chính xác!"
+			feedback_label.text = "Correct!"
 			feedback_label.modulate = Color(0.4, 1.0, 0.4)
 			Global.add_coins(5)
 		else:
-			feedback_label.text = "Sai rồi! Đáp án: " + current_q["correct"]
+			feedback_label.text = "Wrong! Answer: " + current_q["correct"]
 			feedback_label.modulate = Color(1.0, 0.4, 0.4)
 			
 		state = "RESULT"
@@ -266,7 +266,7 @@ func _on_submit_pressed():
 		prompt_label.hide()
 		options_container.hide()
 		
-		btn_submit.text = "Tiếp theo"
+		btn_submit.text = "Next"
 		feedback_label.show()
 		
 	elif state == "RESULT":
@@ -296,11 +296,11 @@ func show_summary():
 				learned.append(v["kana"])
 				
 		Global.set_current_level(current_lvl + 1, learned)
-		feedback_label.text = "CHÚC MỪNG!\nBạn đã đạt %d/%d điểm.\nBạn đã lên Level %d!" % [score, question_pool.size(), current_lvl + 1]
+		feedback_label.text = "CONGRATULATIONS!\nYou scored %d/%d.\nYou reached Level %d!" % [score, question_pool.size(), current_lvl + 1]
 		feedback_label.modulate = Color(0.4, 1.0, 0.4)
 		Global.add_coins(100)
 	else:
-		feedback_label.text = "RẤT TIẾC...\nBạn chỉ đạt %d/%d điểm.\nCần %d điểm để qua màn.\nHãy quay lại học thêm nhé!" % [score, question_pool.size(), passing_score]
+		feedback_label.text = "TOO BAD...\nYou scored %d/%d.\nYou need %d to pass.\nPlease study more and try again!" % [score, question_pool.size(), passing_score]
 		feedback_label.modulate = Color(1.0, 0.4, 0.4)
 		
-	btn_submit.text = "Về Menu"
+	btn_submit.text = "Main Menu"
