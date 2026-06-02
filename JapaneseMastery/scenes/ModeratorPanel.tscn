@@ -1,0 +1,106 @@
+[gd_scene load_steps=2 format=3 uid="uid://d3h7g2b1a9m5"]
+
+[ext_resource type="Script" path="res://scripts/ModeratorPanel.gd" id="1_modpanel"]
+
+[node name="ModeratorPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_modpanel")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.129412, 0.14902, 0.27451, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="TopBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="BtnBack" type="Button" parent="VBoxContainer/TopBar"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+text = "Quay lại"
+
+[node name="BtnPending" type="Button" parent="VBoxContainer/TopBar"]
+custom_minimum_size = Vector2(150, 40)
+layout_mode = 2
+text = "Đang chờ duyệt"
+
+[node name="BtnApproved" type="Button" parent="VBoxContainer/TopBar"]
+custom_minimum_size = Vector2(150, 40)
+layout_mode = 2
+text = "Đã duyệt"
+
+[node name="Label" type="Label" parent="VBoxContainer/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "BẢNG KIỂM DUYỆT BÀI TEST"
+horizontal_alignment = 1
+
+[node name="Padding" type="Control" parent="VBoxContainer/TopBar"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+
+[node name="FilterBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="SearchInput" type="LineEdit" parent="VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(300, 40)
+layout_mode = 2
+placeholder_text = "🔍 Tìm kiếm theo Mã Đề / Tên / Giáo viên..."
+
+[node name="LblStatus" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+text = "Đang tải..."
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TestListContainer" type="VBoxContainer" parent="VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="PaginationBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="BtnPrev" type="Button" parent="VBoxContainer/PaginationBar"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "◀ Trước"
+
+[node name="LblPage" type="Label" parent="VBoxContainer/PaginationBar"]
+layout_mode = 2
+text = "1 / 1"
+vertical_alignment = 1
+
+[node name="BtnNext" type="Button" parent="VBoxContainer/PaginationBar"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "Sau ▶"

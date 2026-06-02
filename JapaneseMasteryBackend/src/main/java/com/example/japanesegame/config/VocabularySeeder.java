@@ -1,0 +1,268 @@
+package com.example.japanesegame.config;
+
+import com.example.japanesegame.entity.Vocabulary;
+import com.example.japanesegame.entity.WordType;
+import com.example.japanesegame.repository.VocabularyRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+@Order(2)
+@RequiredArgsConstructor
+public class VocabularySeeder implements CommandLineRunner {
+
+    private final VocabularyRepository vocabularyRepository;
+
+    @Override
+    public void run(String... args) throws Exception {
+        if (vocabularyRepository.count() == 0) {
+            List<Vocabulary> vList = new ArrayList<>();
+            createVocab(vList, "あ", "a", "a", 1, WordType.HIRAGANA);
+            createVocab(vList, "い", "i", "i", 1, WordType.HIRAGANA);
+            createVocab(vList, "う", "u", "u", 1, WordType.HIRAGANA);
+            createVocab(vList, "え", "e", "e", 1, WordType.HIRAGANA);
+            createVocab(vList, "お", "o", "o", 1, WordType.HIRAGANA);
+            createVocab(vList, "か", "ka", "ka", 1, WordType.HIRAGANA);
+            createVocab(vList, "き", "ki", "ki", 1, WordType.HIRAGANA);
+            createVocab(vList, "く", "ku", "ku", 1, WordType.HIRAGANA);
+            createVocab(vList, "け", "ke", "ke", 1, WordType.HIRAGANA);
+            createVocab(vList, "こ", "ko", "ko", 1, WordType.HIRAGANA);
+            createVocab(vList, "さ", "sa", "sa", 2, WordType.HIRAGANA);
+            createVocab(vList, "し", "shi", "shi", 2, WordType.HIRAGANA);
+            createVocab(vList, "す", "su", "su", 2, WordType.HIRAGANA);
+            createVocab(vList, "せ", "se", "se", 2, WordType.HIRAGANA);
+            createVocab(vList, "そ", "so", "so", 2, WordType.HIRAGANA);
+            createVocab(vList, "た", "ta", "ta", 2, WordType.HIRAGANA);
+            createVocab(vList, "ち", "chi", "chi", 2, WordType.HIRAGANA);
+            createVocab(vList, "つ", "tsu", "tsu", 2, WordType.HIRAGANA);
+            createVocab(vList, "て", "te", "te", 2, WordType.HIRAGANA);
+            createVocab(vList, "と", "to", "to", 2, WordType.HIRAGANA);
+            createVocab(vList, "な", "na", "na", 3, WordType.HIRAGANA);
+            createVocab(vList, "に", "ni", "ni", 3, WordType.HIRAGANA);
+            createVocab(vList, "ぬ", "nu", "nu", 3, WordType.HIRAGANA);
+            createVocab(vList, "ね", "ne", "ne", 3, WordType.HIRAGANA);
+            createVocab(vList, "の", "no", "no", 3, WordType.HIRAGANA);
+            createVocab(vList, "は", "ha", "ha", 3, WordType.HIRAGANA);
+            createVocab(vList, "ひ", "hi", "hi", 3, WordType.HIRAGANA);
+            createVocab(vList, "ふ", "fu", "fu", 3, WordType.HIRAGANA);
+            createVocab(vList, "へ", "he", "he", 3, WordType.HIRAGANA);
+            createVocab(vList, "ほ", "ho", "ho", 3, WordType.HIRAGANA);
+            createVocab(vList, "ま", "ma", "ma", 4, WordType.HIRAGANA);
+            createVocab(vList, "み", "mi", "mi", 4, WordType.HIRAGANA);
+            createVocab(vList, "む", "mu", "mu", 4, WordType.HIRAGANA);
+            createVocab(vList, "め", "me", "me", 4, WordType.HIRAGANA);
+            createVocab(vList, "も", "mo", "mo", 4, WordType.HIRAGANA);
+            createVocab(vList, "や", "ya", "ya", 4, WordType.HIRAGANA);
+            createVocab(vList, "ゆ", "yu", "yu", 4, WordType.HIRAGANA);
+            createVocab(vList, "よ", "yo", "yo", 4, WordType.HIRAGANA);
+            createVocab(vList, "わ", "wa", "wa", 4, WordType.HIRAGANA);
+            createVocab(vList, "を", "o", "o", 4, WordType.HIRAGANA);
+            createVocab(vList, "ら", "ra", "ra", 5, WordType.HIRAGANA);
+            createVocab(vList, "り", "ri", "ri", 5, WordType.HIRAGANA);
+            createVocab(vList, "る", "ru", "ru", 5, WordType.HIRAGANA);
+            createVocab(vList, "れ", "re", "re", 5, WordType.HIRAGANA);
+            createVocab(vList, "ろ", "ro", "ro", 5, WordType.HIRAGANA);
+            createVocab(vList, "ん", "n", "n", 5, WordType.HIRAGANA);
+            createVocab(vList, "っ", "kk", "kk", 5, WordType.HIRAGANA);
+            createVocab(vList, "っ", "ss", "ss", 5, WordType.HIRAGANA);
+            createVocab(vList, "っ", "tt", "tt", 5, WordType.HIRAGANA);
+            createVocab(vList, "っ", "pp", "pp", 5, WordType.HIRAGANA);
+            createVocab(vList, "が", "ga", "ga", 6, WordType.HIRAGANA);
+            createVocab(vList, "ぎ", "gi", "gi", 6, WordType.HIRAGANA);
+            createVocab(vList, "ぐ", "gu", "gu", 6, WordType.HIRAGANA);
+            createVocab(vList, "げ", "ge", "ge", 6, WordType.HIRAGANA);
+            createVocab(vList, "ご", "go", "go", 6, WordType.HIRAGANA);
+            createVocab(vList, "ざ", "za", "za", 6, WordType.HIRAGANA);
+            createVocab(vList, "じ", "ji", "ji", 6, WordType.HIRAGANA);
+            createVocab(vList, "ず", "zu", "zu", 6, WordType.HIRAGANA);
+            createVocab(vList, "ぜ", "ze", "ze", 6, WordType.HIRAGANA);
+            createVocab(vList, "ぞ", "zo", "zo", 6, WordType.HIRAGANA);
+            createVocab(vList, "だ", "da", "da", 7, WordType.HIRAGANA);
+            createVocab(vList, "ぢ", "ji", "ji", 7, WordType.HIRAGANA);
+            createVocab(vList, "づ", "zu", "zu", 7, WordType.HIRAGANA);
+            createVocab(vList, "で", "de", "de", 7, WordType.HIRAGANA);
+            createVocab(vList, "ど", "do", "do", 7, WordType.HIRAGANA);
+            createVocab(vList, "ば", "ba", "ba", 7, WordType.HIRAGANA);
+            createVocab(vList, "び", "bi", "bi", 7, WordType.HIRAGANA);
+            createVocab(vList, "ぶ", "bu", "bu", 7, WordType.HIRAGANA);
+            createVocab(vList, "べ", "be", "be", 7, WordType.HIRAGANA);
+            createVocab(vList, "ぼ", "bo", "bo", 7, WordType.HIRAGANA);
+            createVocab(vList, "ぱ", "pa", "pa", 8, WordType.HIRAGANA);
+            createVocab(vList, "ぴ", "pi", "pi", 8, WordType.HIRAGANA);
+            createVocab(vList, "ぷ", "pu", "pu", 8, WordType.HIRAGANA);
+            createVocab(vList, "ぺ", "pe", "pe", 8, WordType.HIRAGANA);
+            createVocab(vList, "ぽ", "po", "po", 8, WordType.HIRAGANA);
+            createVocab(vList, "ああ", "aa", "aa", 8, WordType.HIRAGANA);
+            createVocab(vList, "いい", "ii", "ii", 8, WordType.HIRAGANA);
+            createVocab(vList, "うう", "uu", "uu", 8, WordType.HIRAGANA);
+            createVocab(vList, "ええ", "ee", "ee", 8, WordType.HIRAGANA);
+            createVocab(vList, "おお", "oo", "oo", 8, WordType.HIRAGANA);
+            createVocab(vList, "えい", "ei", "ei", 9, WordType.HIRAGANA);
+            createVocab(vList, "おう", "ou", "ou", 9, WordType.HIRAGANA);
+            createVocab(vList, "きゃ", "kya", "kya", 9, WordType.HIRAGANA);
+            createVocab(vList, "きゅ", "kyu", "kyu", 9, WordType.HIRAGANA);
+            createVocab(vList, "きょ", "kyo", "kyo", 9, WordType.HIRAGANA);
+            createVocab(vList, "ぎゃ", "gya", "gya", 9, WordType.HIRAGANA);
+            createVocab(vList, "ぎゅ", "gyu", "gyu", 9, WordType.HIRAGANA);
+            createVocab(vList, "ぎょ", "gyo", "gyo", 9, WordType.HIRAGANA);
+            createVocab(vList, "しゃ", "sha", "sha", 10, WordType.HIRAGANA);
+            createVocab(vList, "しゅ", "shu", "shu", 10, WordType.HIRAGANA);
+            createVocab(vList, "しょ", "sho", "sho", 10, WordType.HIRAGANA);
+            createVocab(vList, "じゃ", "ja", "ja", 10, WordType.HIRAGANA);
+            createVocab(vList, "じゅ", "ju", "ju", 10, WordType.HIRAGANA);
+            createVocab(vList, "じょ", "jo", "jo", 10, WordType.HIRAGANA);
+            createVocab(vList, "ちゃ", "cha", "cha", 10, WordType.HIRAGANA);
+            createVocab(vList, "ちゅ", "chu", "chu", 10, WordType.HIRAGANA);
+            createVocab(vList, "ちょ", "cho", "cho", 10, WordType.HIRAGANA);
+            createVocab(vList, "にゃ", "nya", "nya", 11, WordType.HIRAGANA);
+            createVocab(vList, "にゅ", "nyu", "nyu", 11, WordType.HIRAGANA);
+            createVocab(vList, "にょ", "nyo", "nyo", 11, WordType.HIRAGANA);
+            createVocab(vList, "ひゃ", "hya", "hya", 11, WordType.HIRAGANA);
+            createVocab(vList, "ひゅ", "hyu", "hyu", 11, WordType.HIRAGANA);
+            createVocab(vList, "ひょ", "hyo", "hyo", 11, WordType.HIRAGANA);
+            createVocab(vList, "びゃ", "bya", "bya", 11, WordType.HIRAGANA);
+            createVocab(vList, "びゅ", "byu", "byu", 11, WordType.HIRAGANA);
+            createVocab(vList, "びょ", "byo", "byo", 11, WordType.HIRAGANA);
+            createVocab(vList, "ぴゃ", "pya", "pya", 12, WordType.HIRAGANA);
+            createVocab(vList, "ぴゅ", "pyu", "pyu", 12, WordType.HIRAGANA);
+            createVocab(vList, "ぴょ", "pyo", "pyo", 12, WordType.HIRAGANA);
+            createVocab(vList, "みゃ", "mya", "mya", 12, WordType.HIRAGANA);
+            createVocab(vList, "みゅ", "myu", "myu", 12, WordType.HIRAGANA);
+            createVocab(vList, "みょ", "myo", "myo", 12, WordType.HIRAGANA);
+            createVocab(vList, "りゃ", "rya", "rya", 12, WordType.HIRAGANA);
+            createVocab(vList, "りゅ", "ryu", "ryu", 12, WordType.HIRAGANA);
+            createVocab(vList, "りょ", "ryo", "ryo", 12, WordType.HIRAGANA);
+            createVocab(vList, "ア", "a", "a", 13, WordType.KATAKANA);
+            createVocab(vList, "イ", "i", "i", 13, WordType.KATAKANA);
+            createVocab(vList, "ウ", "u", "u", 13, WordType.KATAKANA);
+            createVocab(vList, "エ", "e", "e", 13, WordType.KATAKANA);
+            createVocab(vList, "オ", "o", "o", 13, WordType.KATAKANA);
+            createVocab(vList, "カ", "ka", "ka", 13, WordType.KATAKANA);
+            createVocab(vList, "キ", "ki", "ki", 13, WordType.KATAKANA);
+            createVocab(vList, "ク", "ku", "ku", 13, WordType.KATAKANA);
+            createVocab(vList, "ケ", "ke", "ke", 13, WordType.KATAKANA);
+            createVocab(vList, "コ", "ko", "ko", 13, WordType.KATAKANA);
+            createVocab(vList, "サ", "sa", "sa", 14, WordType.KATAKANA);
+            createVocab(vList, "シ", "shi", "shi", 14, WordType.KATAKANA);
+            createVocab(vList, "ス", "su", "su", 14, WordType.KATAKANA);
+            createVocab(vList, "セ", "se", "se", 14, WordType.KATAKANA);
+            createVocab(vList, "ソ", "so", "so", 14, WordType.KATAKANA);
+            createVocab(vList, "タ", "ta", "ta", 14, WordType.KATAKANA);
+            createVocab(vList, "チ", "chi", "chi", 14, WordType.KATAKANA);
+            createVocab(vList, "ツ", "tsu", "tsu", 14, WordType.KATAKANA);
+            createVocab(vList, "テ", "te", "te", 14, WordType.KATAKANA);
+            createVocab(vList, "ト", "to", "to", 14, WordType.KATAKANA);
+            createVocab(vList, "ナ", "na", "na", 15, WordType.KATAKANA);
+            createVocab(vList, "ニ", "ni", "ni", 15, WordType.KATAKANA);
+            createVocab(vList, "ヌ", "nu", "nu", 15, WordType.KATAKANA);
+            createVocab(vList, "ネ", "ne", "ne", 15, WordType.KATAKANA);
+            createVocab(vList, "ノ", "no", "no", 15, WordType.KATAKANA);
+            createVocab(vList, "ハ", "ha", "ha", 15, WordType.KATAKANA);
+            createVocab(vList, "ヒ", "hi", "hi", 15, WordType.KATAKANA);
+            createVocab(vList, "フ", "fu", "fu", 15, WordType.KATAKANA);
+            createVocab(vList, "ヘ", "he", "he", 15, WordType.KATAKANA);
+            createVocab(vList, "ホ", "ho", "ho", 15, WordType.KATAKANA);
+            createVocab(vList, "マ", "ma", "ma", 16, WordType.KATAKANA);
+            createVocab(vList, "ミ", "mi", "mi", 16, WordType.KATAKANA);
+            createVocab(vList, "ム", "mu", "mu", 16, WordType.KATAKANA);
+            createVocab(vList, "メ", "me", "me", 16, WordType.KATAKANA);
+            createVocab(vList, "モ", "mo", "mo", 16, WordType.KATAKANA);
+            createVocab(vList, "ヤ", "ya", "ya", 16, WordType.KATAKANA);
+            createVocab(vList, "ユ", "yu", "yu", 16, WordType.KATAKANA);
+            createVocab(vList, "ヨ", "yo", "yo", 16, WordType.KATAKANA);
+            createVocab(vList, "ワ", "wa", "wa", 16, WordType.KATAKANA);
+            createVocab(vList, "ヲ", "wo", "wo", 16, WordType.KATAKANA);
+            createVocab(vList, "ラ", "ra", "ra", 17, WordType.KATAKANA);
+            createVocab(vList, "リ", "ri", "ri", 17, WordType.KATAKANA);
+            createVocab(vList, "ル", "ru", "ru", 17, WordType.KATAKANA);
+            createVocab(vList, "レ", "re", "re", 17, WordType.KATAKANA);
+            createVocab(vList, "ロ", "ro", "ro", 17, WordType.KATAKANA);
+            createVocab(vList, "ン", "n", "n", 17, WordType.KATAKANA);
+            createVocab(vList, "ッ", "kk", "kk", 17, WordType.KATAKANA);
+            createVocab(vList, "ッ", "ss", "ss", 17, WordType.KATAKANA);
+            createVocab(vList, "ッ", "tt", "tt", 17, WordType.KATAKANA);
+            createVocab(vList, "ッ", "pp", "pp", 17, WordType.KATAKANA);
+            createVocab(vList, "ガ", "ga", "ga", 18, WordType.KATAKANA);
+            createVocab(vList, "ギ", "gi", "gi", 18, WordType.KATAKANA);
+            createVocab(vList, "グ", "gu", "gu", 18, WordType.KATAKANA);
+            createVocab(vList, "ゲ", "ge", "ge", 18, WordType.KATAKANA);
+            createVocab(vList, "ゴ", "go", "go", 18, WordType.KATAKANA);
+            createVocab(vList, "ザ", "za", "za", 18, WordType.KATAKANA);
+            createVocab(vList, "ジ", "ji", "ji", 18, WordType.KATAKANA);
+            createVocab(vList, "ズ", "zu", "zu", 18, WordType.KATAKANA);
+            createVocab(vList, "ゼ", "ze", "ze", 18, WordType.KATAKANA);
+            createVocab(vList, "ゾ", "zo", "zo", 18, WordType.KATAKANA);
+            createVocab(vList, "ダ", "da", "da", 19, WordType.KATAKANA);
+            createVocab(vList, "ヂ", "ji", "ji", 19, WordType.KATAKANA);
+            createVocab(vList, "ヅ", "zu", "zu", 19, WordType.KATAKANA);
+            createVocab(vList, "デ", "de", "de", 19, WordType.KATAKANA);
+            createVocab(vList, "ド", "do", "do", 19, WordType.KATAKANA);
+            createVocab(vList, "バ", "ba", "ba", 19, WordType.KATAKANA);
+            createVocab(vList, "ビ", "bi", "bi", 19, WordType.KATAKANA);
+            createVocab(vList, "ブ", "bu", "bu", 19, WordType.KATAKANA);
+            createVocab(vList, "ベ", "be", "be", 19, WordType.KATAKANA);
+            createVocab(vList, "ボ", "bo", "bo", 19, WordType.KATAKANA);
+            createVocab(vList, "パ", "pa", "pa", 20, WordType.KATAKANA);
+            createVocab(vList, "ピ", "pi", "pi", 20, WordType.KATAKANA);
+            createVocab(vList, "プ", "pu", "pu", 20, WordType.KATAKANA);
+            createVocab(vList, "ペ", "pe", "pe", 20, WordType.KATAKANA);
+            createVocab(vList, "ポ", "po", "po", 20, WordType.KATAKANA);
+            createVocab(vList, "アー", "aa", "aa", 20, WordType.KATAKANA);
+            createVocab(vList, "イー", "ii", "ii", 20, WordType.KATAKANA);
+            createVocab(vList, "ウー", "uu", "uu", 20, WordType.KATAKANA);
+            createVocab(vList, "エー", "ee", "ee", 20, WordType.KATAKANA);
+            createVocab(vList, "オー", "oo", "oo", 20, WordType.KATAKANA);
+            createVocab(vList, "キャ", "kya", "kya", 21, WordType.KATAKANA);
+            createVocab(vList, "キュ", "kyu", "kyu", 21, WordType.KATAKANA);
+            createVocab(vList, "キョ", "kyo", "kyo", 21, WordType.KATAKANA);
+            createVocab(vList, "ギャ", "gya", "gya", 21, WordType.KATAKANA);
+            createVocab(vList, "ギュ", "gyu", "gyu", 21, WordType.KATAKANA);
+            createVocab(vList, "ギョ", "gyo", "gyo", 21, WordType.KATAKANA);
+            createVocab(vList, "シャ", "sha", "sha", 21, WordType.KATAKANA);
+            createVocab(vList, "シュ", "shu", "shu", 21, WordType.KATAKANA);
+            createVocab(vList, "ショ", "sho", "sho", 21, WordType.KATAKANA);
+            createVocab(vList, "ジャ", "ja", "ja", 22, WordType.KATAKANA);
+            createVocab(vList, "ジュ", "ju", "ju", 22, WordType.KATAKANA);
+            createVocab(vList, "ジョ", "jo", "jo", 22, WordType.KATAKANA);
+            createVocab(vList, "チャ", "cha", "cha", 22, WordType.KATAKANA);
+            createVocab(vList, "チュ", "chu", "chu", 22, WordType.KATAKANA);
+            createVocab(vList, "チョ", "cho", "cho", 22, WordType.KATAKANA);
+            createVocab(vList, "ニャ", "nya", "nya", 22, WordType.KATAKANA);
+            createVocab(vList, "ニュ", "nyu", "nyu", 22, WordType.KATAKANA);
+            createVocab(vList, "ニョ", "nyo", "nyo", 22, WordType.KATAKANA);
+            createVocab(vList, "ヒャ", "hya", "hya", 23, WordType.KATAKANA);
+            createVocab(vList, "ヒュ", "hyu", "hyu", 23, WordType.KATAKANA);
+            createVocab(vList, "ヒョ", "hyo", "hyo", 23, WordType.KATAKANA);
+            createVocab(vList, "ビャ", "bya", "bya", 23, WordType.KATAKANA);
+            createVocab(vList, "ビュ", "byu", "byu", 23, WordType.KATAKANA);
+            createVocab(vList, "ビョ", "byo", "byo", 23, WordType.KATAKANA);
+            createVocab(vList, "ピャ", "pya", "pya", 23, WordType.KATAKANA);
+            createVocab(vList, "ピュ", "pyu", "pyu", 23, WordType.KATAKANA);
+            createVocab(vList, "ピョ", "pyo", "pyo", 23, WordType.KATAKANA);
+            createVocab(vList, "ミャ", "mya", "mya", 24, WordType.KATAKANA);
+            createVocab(vList, "ミュ", "myu", "myu", 24, WordType.KATAKANA);
+            createVocab(vList, "ミョ", "myo", "myo", 24, WordType.KATAKANA);
+            createVocab(vList, "リャ", "rya", "rya", 24, WordType.KATAKANA);
+            createVocab(vList, "リュ", "ryu", "ryu", 24, WordType.KATAKANA);
+            createVocab(vList, "リョ", "ryo", "ryo", 24, WordType.KATAKANA);
+
+            vocabularyRepository.saveAll(vList);
+            System.out.println("Default vocabularies created (Levels 1-24).");
+        }
+    }
+
+    private void createVocab(List<Vocabulary> list, String jp, String romaji, String meaning, int level, WordType type) {
+        list.add(Vocabulary.builder()
+                .wordJp(jp)
+                .romaji(romaji)
+                .meaning(meaning)
+                .levelRequired(level)
+                .type(type)
+                .build());
+    }
+}

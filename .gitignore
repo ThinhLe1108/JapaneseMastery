@@ -1,0 +1,26 @@
+# Godot
+.godot/
+*.import
+export_presets.cfg
+*.translation
+
+# Java / Maven
+target/
+.idea/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# Data files
+JMdict_e
+*.json
+*.sqlite
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
