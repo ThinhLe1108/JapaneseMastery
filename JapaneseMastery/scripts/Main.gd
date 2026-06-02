@@ -16,9 +16,16 @@ var btn_mod: Button
 var btn_create_test: Button
 var btn_enter_test_code: Button
 var btn_designer: Button
+var btn_quantum: Button
 
 var enter_code_dialog: AcceptDialog
 var code_input: LineEdit
+
+var quantum_dialog: ConfirmationDialog
+var quantum_option_btn: OptionButton
+
+var solo_dialog: ConfirmationDialog
+var solo_option_btn: OptionButton
 
 var time_elapsed: float = 0.0
 var floating_kanjis: Array = []
@@ -146,6 +153,10 @@ func setup_ui():
 	btn_placement.pressed.connect(_on_placement_pressed)
 	vbox.add_child(btn_placement)
 	
+	btn_quantum = create_menu_btn("Quantum Mode")
+	btn_quantum.pressed.connect(_on_quantum_pressed)
+	vbox.add_child(btn_quantum)
+	
 	btn_solo = create_menu_btn("Học (Level X)")
 	btn_solo.pressed.connect(_on_solo_pressed)
 	vbox.add_child(btn_solo)
@@ -183,9 +194,24 @@ func setup_ui():
 	btn_designer.hide()
 	vbox.add_child(btn_designer)
 	
-	var btn_logout = create_menu_btn("Đăng xuất")
+	var btn_logout = Button.new()
+	btn_logout.text = "Logout"
+	btn_logout.position = Vector2(20, 15)
+	btn_logout.custom_minimum_size = Vector2(120, 40)
+	btn_logout.add_theme_font_size_override("font_size", 20)
+	var style_lo = StyleBoxFlat.new()
+	style_lo.bg_color = Color(0.8, 0.2, 0.2, 0.8)
+	style_lo.corner_radius_top_left = 8
+	style_lo.corner_radius_bottom_right = 8
+	style_lo.corner_radius_top_right = 8
+	style_lo.corner_radius_bottom_left = 8
+	btn_logout.add_theme_stylebox_override("normal", style_lo)
+	var style_lo_h = style_lo.duplicate()
+	style_lo_h.bg_color = Color(1.0, 0.3, 0.3, 1.0)
+	btn_logout.add_theme_stylebox_override("hover", style_lo_h)
+	btn_logout.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn_logout.pressed.connect(_on_logout_pressed)
-	vbox.add_child(btn_logout)
+	add_child(btn_logout)
 
 func _create_header_label(font_size: int, font_color: Color) -> Label:
 	var lbl = Label.new()
@@ -249,6 +275,9 @@ func refresh_data():
 	
 	btn_placement.disabled = false
 	btn_placement.text = "Bài Test Lên Cấp (Lv %d -> %d)" % [level, level + 1]
+	var start_level = ((level - 1) / 5) * 5 + 1
+	var max_lvl = start_level + 4
+	btn_quantum.text = "Bài Test Quantum"
 	
 	btn_solo.disabled = false
 	btn_solo.text = "Học (Level %d)" % level
@@ -268,6 +297,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "MODERATOR":
@@ -280,6 +310,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "DESIGNER":
@@ -292,6 +323,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "SENSEI":
@@ -304,6 +336,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.show()
 		btn_enter_test_code.hide()
 	else: # PLAYER
@@ -316,13 +349,88 @@ func refresh_data():
 		btn_solo.show()
 		btn_pvp.show()
 		btn_shop.show()
+		btn_quantum.show()
 		btn_create_test.hide()
 		btn_enter_test_code.show()
 
 func _on_placement_pressed():
 	Global.goto_scene("res://scenes/LevelTest.tscn")
 
+func _on_quantum_pressed():
+	if quantum_dialog == null:
+		_setup_quantum_dialog()
+	
+	quantum_option_btn.clear()
+	var level = Global.get_current_level()
+	quantum_option_btn.add_item("Quantum Test (Level %d)" % level, 1)
+	quantum_option_btn.add_item("Test Toàn Diện (Level 1 - %d)" % level, 2)
+	
+	quantum_dialog.popup_centered()
+
+func _setup_quantum_dialog():
+	quantum_dialog = ConfirmationDialog.new()
+	quantum_dialog.title = "Chọn Chế Độ Quantum Test"
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	
+	var lbl = Label.new()
+	lbl.text = "Bạn muốn làm bài test theo chế độ nào?"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(lbl)
+	
+	quantum_option_btn = OptionButton.new()
+	quantum_option_btn.custom_minimum_size = Vector2(300, 40)
+	vbox.add_child(quantum_option_btn)
+	
+	quantum_dialog.add_child(vbox)
+	quantum_dialog.confirmed.connect(_on_quantum_confirmed)
+	add_child(quantum_dialog)
+
+func _on_quantum_confirmed():
+	var selected_id = quantum_option_btn.get_item_id(quantum_option_btn.selected)
+	Global.quantum_mode = selected_id
+	Global.goto_scene("res://scenes/QuantumTest.tscn")
+
 func _on_solo_pressed():
+	if solo_dialog == null:
+		_setup_solo_dialog()
+		
+	solo_option_btn.clear()
+	var level = Global.get_current_level()
+	for i in range(1, level + 1):
+		solo_option_btn.add_item("Level %d" % i, i)
+		
+	# Select the current level by default
+	solo_option_btn.select(level - 1)
+	
+	solo_dialog.popup_centered()
+
+func _setup_solo_dialog():
+	solo_dialog = ConfirmationDialog.new()
+	solo_dialog.title = "Chọn Cấp Độ"
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	
+	var lbl = Label.new()
+	lbl.text = "Bạn muốn học/ôn lại cấp độ nào?"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(lbl)
+	
+	solo_option_btn = OptionButton.new()
+	solo_option_btn.custom_minimum_size = Vector2(250, 40)
+	vbox.add_child(solo_option_btn)
+	
+	solo_dialog.add_child(vbox)
+	solo_dialog.confirmed.connect(_on_solo_confirmed)
+	add_child(solo_dialog)
+
+func _on_solo_confirmed():
+	var selected_id = solo_option_btn.get_item_id(solo_option_btn.selected)
+	# Normally SoloLearning.gd takes Global.get_current_level(). 
+	# Let's set a temporary variable in Global or just pass it.
+	Global.set("solo_target_level", selected_id)
 	Global.goto_scene("res://scenes/SoloLearning.tscn")
 	
 func _on_create_test_pressed():

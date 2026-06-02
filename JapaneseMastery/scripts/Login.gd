@@ -37,12 +37,12 @@ func _setup_ui():
 	add_child(vbox)
 	
 	username_input = LineEdit.new()
-	username_input.placeholder_text = "SĐT hoặc Email"
+	username_input.placeholder_text = "Username"
 	username_input.custom_minimum_size = Vector2(400, 50)
 	vbox.add_child(username_input)
 	
 	password_input = LineEdit.new()
-	password_input.placeholder_text = "Mật khẩu"
+	password_input.placeholder_text = "Password"
 	password_input.secret = true
 	password_input.custom_minimum_size = Vector2(400, 50)
 	vbox.add_child(password_input)
