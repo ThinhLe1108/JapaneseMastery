@@ -1,9 +1,32 @@
 import xml.etree.ElementTree as ET
 import json
 import os
+import urllib.request
+import gzip
+import shutil
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(script_dir)
+data_dir = os.path.join(project_dir, 'data')
+os.makedirs(data_dir, exist_ok=True)
+
+jmdict_path = os.path.join(data_dir, 'JMdict_e')
+
+if not os.path.exists(jmdict_path):
+    print("JMdict_e not found. Downloading...")
+    url = "http://ftp.edrdg.org/pub/Nihongo/JMdict_e.gz"
+    gz_path = jmdict_path + ".gz"
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req) as response, open(gz_path, 'wb') as out_file:
+        shutil.copyfileobj(response, out_file)
+    print("Extracting JMdict_e...")
+    with gzip.open(gz_path, 'rb') as f_in, open(jmdict_path, 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    os.remove(gz_path)
+    print("Download and extraction complete.")
 
 print("Parsing JMdict_e for ALL words...")
-tree = ET.parse(r'd:\Game\SWD\JMdict_e')
+tree = ET.parse(jmdict_path)
 root = tree.getroot()
 
 vocab_list = []
@@ -60,8 +83,6 @@ for i in range(total_levels):
         break
     levels_dict[str(level)] = items
 
-data_dir = r'd:\Game\SWD\JapaneseMastery\data'
-os.makedirs(data_dir, exist_ok=True)
 json_path = os.path.join(data_dir, 'jmdict_levels.json')
 
 with open(json_path, 'w', encoding='utf-8') as f:

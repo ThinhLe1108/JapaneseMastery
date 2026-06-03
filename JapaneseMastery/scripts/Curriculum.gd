@@ -144,6 +144,14 @@ static func _load_extended_json():
 	if not FileAccess.file_exists(file_path):
 		file_path = "res://data/jmdict_levels.json"
 		
+	if not FileAccess.file_exists(file_path):
+		print("jmdict_levels.json not found! Running Python script to auto-generate it...")
+		var output = []
+		var script_path = ProjectSettings.globalize_path("res://scripts/parse_jmdict_full.py")
+		OS.execute("python", [script_path], output, true, true)
+		for l in output:
+			print(l)
+		
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file:
 		var content = file.get_as_text()
