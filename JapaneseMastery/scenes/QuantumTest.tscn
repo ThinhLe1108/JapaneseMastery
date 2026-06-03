@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://testc3c4v5b6p"]
+[gd_scene format=3 uid="uid://d0vxvnrxfljcv"]
 
 [ext_resource type="Script" path="res://scripts/QuantumTest.gd" id="1_testm6"]
 

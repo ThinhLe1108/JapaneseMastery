@@ -39,6 +39,10 @@ public class JMdictService {
             if (!dictFile.exists()) {
                 System.out.println("JMdict_e not found! Downloading from ftp.edrdg.org (62MB)... Please wait...");
                 try {
+                    File parent = dictFile.getParentFile();
+                    if (parent != null && !parent.exists()) {
+                        parent.mkdirs();
+                    }
                     URL url = new URL("http://ftp.edrdg.org/pub/Nihongo/JMdict_e");
                     Files.copy(url.openStream(), dictFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     System.out.println("Download complete!");
