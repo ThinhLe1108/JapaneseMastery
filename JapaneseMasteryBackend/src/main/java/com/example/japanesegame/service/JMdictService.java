@@ -35,7 +35,12 @@ public class JMdictService {
 
     public synchronized void reloadJMdict() {
         try {
-            File dictFile = new File("d:/Game/SWD/JMdict_e");
+            String currentDir = System.getProperty("user.dir");
+            File baseDir = new File(currentDir);
+            if ("JapaneseMasteryBackend".equals(baseDir.getName())) {
+                baseDir = baseDir.getParentFile();
+            }
+            File dictFile = new File(baseDir, "JMdict_e");
             if (!dictFile.exists()) {
                 System.out.println("JMdict_e not found! Downloading from ftp.edrdg.org (62MB)... Please wait...");
                 try {
