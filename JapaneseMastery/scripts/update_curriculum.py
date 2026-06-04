@@ -1,4 +1,8 @@
-with open('d:/Game/SWD/JapaneseMastery/scripts/Curriculum.gd', 'r', encoding='utf-8') as f:
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+curriculum_path = os.path.join(script_dir, 'Curriculum.gd')
+
+with open(curriculum_path, 'r', encoding='utf-8') as f:
     lines = f.readlines()
 
 # keep lines up to 122
@@ -32,6 +36,6 @@ static func _load_extended_json():
 """
 lines.append(extra_code)
 
-with open('d:/Game/SWD/JapaneseMastery/scripts/Curriculum.gd', 'w', encoding='utf-8') as f:
+with open(curriculum_path, 'w', encoding='utf-8') as f:
     f.writelines(lines)
 print('Updated Curriculum.gd')
