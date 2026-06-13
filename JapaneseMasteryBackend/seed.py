@@ -111,7 +111,8 @@ for line in lines:
         else:
             t = 'KATAKANA'
         
-        results.append(f'            createVocab(vList, "{char}", "{romaji}", "{romaji}", {current_level}, WordType.{t});')
+        # for these basic kanas, wordJp is empty, kana is char, romaji is romaji
+        results.append(f'            createVocab(vList, "", "{char}", "{romaji}", "{romaji}", {current_level}, WordType.{t});')
 
 java_code = """package com.example.japanesegame.config;
 
@@ -144,9 +145,10 @@ public class VocabularySeeder implements CommandLineRunner {
         }
     }
 
-    private void createVocab(List<Vocabulary> list, String jp, String romaji, String meaning, int level, WordType type) {
+    private void createVocab(List<Vocabulary> list, String jp, String kana, String romaji, String meaning, int level, WordType type) {
         list.add(Vocabulary.builder()
                 .wordJp(jp)
+                .kana(kana)
                 .romaji(romaji)
                 .meaning(meaning)
                 .levelRequired(level)

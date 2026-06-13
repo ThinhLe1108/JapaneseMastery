@@ -1,6 +1,13 @@
 import xml.etree.ElementTree as ET
 import json
 import os
+import pykakasi
+
+kks = pykakasi.kakasi()
+
+def to_romaji(text):
+    result = kks.convert(text)
+    return ''.join([item['hepburn'] for item in result])
 
 print("Parsing JMdict_e...")
 tree = ET.parse(r'd:\Game\SWD\JMdict_e')
@@ -56,9 +63,14 @@ for entry in root.findall('entry'):
         
     meaning_str = ", ".join(meanings[:2]).replace('"', "'")
     
+    actual_word_jp = keb if keb != reb else ""
+    actual_kana = reb
+    actual_romaji = to_romaji(reb)
+
     vocab_list.append({
-        "kana": keb,
-        "romaji": reb,
+        "wordJp": actual_word_jp,
+        "kana": actual_kana,
+        "romaji": actual_romaji,
         "meaning": meaning_str
     })
     

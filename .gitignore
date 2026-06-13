@@ -1,3 +1,21 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+/[Uu]ser[Ss]ettings/
+ASetStoreTools*
+/Assets/AssetStoreTools*
+[Ee]xported[Oo]bj/
+.vs/
+sysinfo.txt
+*.apk
+*.unitypackage
+.DS_Store
+
 # Godot
 .godot/
 *.import
