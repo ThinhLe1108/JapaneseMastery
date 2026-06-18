@@ -26,7 +26,7 @@ func _setup_ui():
 	title.add_theme_font_size_override("font_size", 48)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	title.position.y = 100
+	title.position.y = 80
 	add_child(title)
 	
 	# VBox

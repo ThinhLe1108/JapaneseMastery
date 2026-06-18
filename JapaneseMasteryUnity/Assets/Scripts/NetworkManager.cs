@@ -4,8 +4,11 @@ using UnityEngine;
 public class NetworkManager : MonoBehaviour
 {
     private static NetworkManager _instance;
+    private static bool _isShuttingDown = false;
+
     public static NetworkManager Instance { 
         get {
+            if (_isShuttingDown) return null;
             if (_instance == null) {
                 _instance = UnityEngine.Object.FindObjectOfType<NetworkManager>();
                 if (_instance == null) {
@@ -17,6 +20,18 @@ public class NetworkManager : MonoBehaviour
         }
         private set { _instance = value; }
     }
+
+    private void OnApplicationQuit()
+    {
+        _isShuttingDown = true;
+    }
+
+    private void OnDestroy()
+    {
+        // Don't set instance to null here because it might trigger recreation in other scripts' OnDestroy
+        // if they access Instance. The _isShuttingDown flag handles it.
+    }
+
     public string BASE_URL = "http://localhost:8080";
     public string jwtToken = "";
     public bool isLoggedIn = false;

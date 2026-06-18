@@ -35,6 +35,7 @@ public class MainMenuManager : MonoBehaviour
         btnPlacement.onClick.AddListener(() => SceneManager.LoadScene("LevelTest"));
         btnQuantum.onClick.AddListener(OnQuantumPressed);
         btnSolo.onClick.AddListener(OnSoloPressed);
+        btnPvP.onClick.AddListener(OnPvPPressed);
         btnAdmin.onClick.AddListener(() => SceneManager.LoadScene("AdminPanel"));
         btnMod.onClick.AddListener(() => SceneManager.LoadScene("ModeratorPanel"));
         btnDesigner.onClick.AddListener(() => SceneManager.LoadScene("DesignerPanel"));
@@ -48,8 +49,12 @@ public class MainMenuManager : MonoBehaviour
         timeElapsed += Time.deltaTime;
         if (titleLabel != null)
         {
-            // Hover effect
-            titleLabel.transform.localPosition = new Vector3(titleLabel.transform.localPosition.x, 120 + Mathf.Sin(timeElapsed * 1.5f) * 10f, 0);
+            // Hover effect - Anchor to top (0.5, 1) and position at -50 from top
+            RectTransform rt = titleLabel.rectTransform;
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(0.5f, 1);
+            rt.anchoredPosition = new Vector2(0, -50 + Mathf.Sin(timeElapsed * 1.5f) * 10f);
         }
     }
 
@@ -120,6 +125,16 @@ public class MainMenuManager : MonoBehaviour
     {
         Global.SoloTargetLevel = Global.CurrentLevel;
         SceneManager.LoadScene("SoloLearning");
+    }
+
+    private void OnPvPPressed()
+    {
+        if (Global.CurrentLevel <= 24)
+        {
+            Debug.LogWarning("You must be level 25 or higher to enter PvP.");
+            return;
+        }
+        SceneManager.LoadScene("PvP");
     }
 
     private void OnEnterTestCodePressed()

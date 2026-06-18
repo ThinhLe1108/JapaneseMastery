@@ -44,7 +44,7 @@ func _ready():
 func _process(delta):
 	time_elapsed += delta
 	if is_instance_valid(title):
-		title.position.y = 120 + sin(time_elapsed * 1.5) * 10.0
+		title.position.y = 50 + sin(time_elapsed * 1.5) * 10.0
 		
 	for i in range(floating_kanjis.size() - 1, -1, -1):
 		var k = floating_kanjis[i]
@@ -128,7 +128,7 @@ func setup_ui():
 	title.add_theme_font_size_override("font_size", 72)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	title.position.y = 120
+	title.position.y = 50
 	
 	# Title styling
 	title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
@@ -145,7 +145,7 @@ func setup_ui():
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	vbox.position.y = 250
+	vbox.position.y = 300
 	vbox.add_theme_constant_override("separation", 15)
 	add_child(vbox)
 	
