@@ -6,19 +6,15 @@ using UnityEngine.Networking;
 using Newtonsoft.Json;
 using TMPro;
 using System.Linq;
+using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
+// Forced re-compile: 2026-06-16 11:00
 public class LevelTestManager : MonoBehaviour
 {
-    private List<CurriculumItem> vocabData = new List<CurriculumItem>();
-    private List<Dictionary<string, object>> questionPool = new List<Dictionary<string, object>>();
-    private int currentQIdx = 0;
-    private int score = 0;
-    private int passingScore = 8; // 8/10
+    private static bool _instanceExists = false;
 
-    private string state = "PLAYING";
-    private Dictionary<string, object> currentQ = new Dictionary<string, object>();
-    private int selectedOption = -1;
-
+    [Header("UI References")]
     public TextMeshProUGUI progressLabel;
     public TextMeshProUGUI wordLabel;
     public TextMeshProUGUI promptLabel;
@@ -26,256 +22,343 @@ public class LevelTestManager : MonoBehaviour
     public Button btnSubmit;
     public Button btnBack;
     public TextMeshProUGUI feedbackLabel;
-
     public GameObject optionButtonPrefab;
+    public Image backgroundImage;
+
+    // Logic Data
+    private List<CurriculumItem> vocabData = new List<CurriculumItem>();
+    private List<Dictionary<string, object>> questionPool = new List<Dictionary<string, object>>();
+    private int currentQIdx = 0;
+    private int score = 0;
+    private int passingScore = 15; 
+    private string state = "LOADING";
+    private Dictionary<string, object> currentQ = new Dictionary<string, object>();
+    private int selectedOption = -1;
+
+    void Awake()
+    {
+        Debug.Log("LevelTest: Manager Awake");
+        if (_instanceExists) {
+            Debug.LogWarning("LevelTest: Duplicate manager detected. Destroying.");
+            Destroy(gameObject);
+            return;
+        }
+        _instanceExists = true;
+    }
+
+    private void OnDestroy() { if (_instanceExists) _instanceExists = false; }
 
     void Start()
     {
-        if (Global.Instance != null) Global.Instance.EnsureCamera();
-
-        btnBack.onClick.AddListener(() => UnityEngine.SceneManagement.SceneManager.LoadScene("Main"));
-        btnSubmit.onClick.AddListener(OnSubmitPressed);
-
-        int level = Global.CurrentLevel;
-
-        wordLabel.text = "Loading data...";
-        wordLabel.gameObject.SetActive(true);
-        promptLabel.gameObject.SetActive(false);
-        optionsContainer.gameObject.SetActive(false);
-        btnSubmit.gameObject.SetActive(false);
-        progressLabel.gameObject.SetActive(false);
-
-        StartCoroutine(FetchVocabFromServer(level));
-    }
-
-    IEnumerator FetchVocabFromServer(int level)
-    {
-        var levelData = Curriculum.GetLevel(level);
-        if (levelData.Count > 0)
-        {
-            vocabData = levelData;
-            SetupQuestionPool();
-            yield break;
+        Debug.Log("LevelTest: Manager Start");
+        if (FindObjectOfType<EventSystem>() == null) {
+            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
         }
 
-        int userId = Global.UserId;
-        string url = NetworkManager.Instance.BASE_URL + $"/player/vocabularies?level={level}";
-        if (userId != -1) url += $"&userId={userId}";
-
-        using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
-        {
-            webRequest.SetRequestHeader("Authorization", "Bearer " + NetworkManager.Instance.jwtToken);
-            yield return webRequest.SendWebRequest();
-
-            bool loaded = false;
-            if (webRequest.result == UnityWebRequest.Result.Success)
-            {
-                var list = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(webRequest.downloadHandler.text);
-                if (list != null && list.Count > 0)
-                {
-                    vocabData.Clear();
-                    foreach (var item in list)
-                    {
-                        vocabData.Add(new CurriculumItem {
-                            kana = item.ContainsKey("wordJp") ? item["wordJp"].ToString() : "",
-                            romaji = item.ContainsKey("romaji") ? item["romaji"].ToString() : "",
-                            meaning = item.ContainsKey("meaning") ? item["meaning"].ToString() : ""
-                        });
-                    }
-                    loaded = true;
-                }
-            }
-
-            if (!loaded)
-                vocabData = new List<CurriculumItem> { new CurriculumItem { kana = "Error", romaji = "Error" } };
-
-            SetupQuestionPool();
-        }
+        FindUIReferences();
+        SetupUI();
+        StartCoroutine(InitializationSequence());
     }
 
-    void SetupQuestionPool()
+    void FindUIReferences()
     {
-        var basePool = new List<CurriculumItem>(vocabData);
-        System.Random rng = new System.Random();
+        if (wordLabel == null) wordLabel = GameObject.Find("WordLabel")?.GetComponent<TextMeshProUGUI>();
+        if (promptLabel == null) promptLabel = GameObject.Find("PromptLabel")?.GetComponent<TextMeshProUGUI>();
+        if (progressLabel == null) progressLabel = GameObject.Find("ProgressLabel")?.GetComponent<TextMeshProUGUI>();
+        if (feedbackLabel == null) feedbackLabel = GameObject.Find("FeedbackLabel")?.GetComponent<TextMeshProUGUI>();
+        if (optionsContainer == null) optionsContainer = GameObject.Find("OptionsContainer")?.transform;
+        if (btnSubmit == null) btnSubmit = GameObject.Find("BtnSubmit")?.GetComponent<Button>();
+        if (btnBack == null) btnBack = GameObject.Find("BtnBack")?.GetComponent<Button>();
+        if (backgroundImage == null) backgroundImage = GameObject.Find("Background")?.GetComponent<Image>();
         
-        // Shuffle base pool
-        int n = basePool.Count;  
-        while (n > 1) {  
-            n--;  
-            int k = rng.Next(n + 1);  
-            var value = basePool[k];  
-            basePool[k] = basePool[n];  
-            basePool[n] = value;  
+        if (optionButtonPrefab == null) optionButtonPrefab = GameObject.Find("OptionButtonPrefab");
+        
+        Debug.Log($"LevelTest: Refs - Word:{wordLabel != null}, Prompt:{promptLabel != null}, Progress:{progressLabel != null}, Options:{optionsContainer != null}, Prefab:{optionButtonPrefab != null}");
+    }
+
+    void SetupUI()
+    {
+        Color bgColor = new Color(0.12f, 0.12f, 0.18f);
+        if (backgroundImage != null) backgroundImage.color = bgColor;
+
+        if (btnBack != null) {
+            btnBack.onClick.RemoveAllListeners();
+            btnBack.onClick.AddListener(() => SceneManager.LoadScene("Main"));
+            var t = btnBack.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (t != null) { 
+                t.gameObject.SetActive(true);
+                t.text = "Cancel & Main Menu"; 
+                t.color = Color.white;
+                t.fontSize = 16;
+            }
+            if (btnBack.image != null) {
+                btnBack.image.color = new Color(0.15f, 0.15f, 0.2f);
+                btnBack.image.raycastTarget = true;
+            }
+            btnBack.transform.SetAsLastSibling();
+        }
+        
+        if (btnSubmit != null) {
+            btnSubmit.onClick.RemoveAllListeners();
+            btnSubmit.onClick.AddListener(OnSubmitPressed);
+            var t = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (t != null) { 
+                t.gameObject.SetActive(true);
+                t.text = "Confirm"; 
+                t.color = Color.gray; 
+                t.fontSize = 20;
+                t.alignment = TextAlignmentOptions.Center;
+            }
+            btnSubmit.interactable = false;
+            btnSubmit.transform.SetAsLastSibling();
         }
 
-        if (basePool.Count > 10) basePool = basePool.GetRange(0, 10);
+        if (wordLabel != null) {
+            wordLabel.text = "LOADING...";
+            wordLabel.color = Color.white;
+            wordLabel.fontSizeMax = 50; 
+            wordLabel.fontSizeMin = 18;
+            wordLabel.enableAutoSizing = true;
+        }
 
+        if (optionsContainer != null) {
+            var grid = optionsContainer.GetComponent<GridLayoutGroup>();
+            if (grid != null) {
+                grid.cellSize = new Vector2(320, 75); 
+                grid.spacing = new Vector2(20, 20);
+            }
+        }
+
+        if (feedbackLabel != null) {
+            feedbackLabel.gameObject.SetActive(false);
+            feedbackLabel.fontSizeMax = 30;
+            feedbackLabel.enableAutoSizing = true;
+        }
+    }
+
+    IEnumerator InitializationSequence()
+    {
+        int level = Global.CurrentLevel;
+        Debug.Log($"LevelTest: Loading level {level}");
+        vocabData = Curriculum.GetLevel(level);
+
+        if (vocabData == null || vocabData.Count == 0) {
+            Debug.LogWarning("LevelTest: Local data empty.");
+        }
+
+        if (vocabData == null || vocabData.Count == 0) {
+            if (wordLabel != null) wordLabel.text = "ERROR: NO DATA";
+        } else {
+            GenerateQuestions();
+        }
+        yield return null;
+    }
+
+    void GenerateQuestions()
+    {
+        Debug.Log("LevelTest: Generating 20 questions...");
         questionPool.Clear();
-        foreach (var v in basePool)
-        {
-            questionPool.Add(new Dictionary<string, object> { { "vocab", v }, { "type", "kana_romaji" } });
-            questionPool.Add(new Dictionary<string, object> { { "vocab", v }, { "type", "meaning" } });
+        
+        var words = vocabData.OrderBy(a => Random.value).ToList();
+        if (words.Count == 0) {
+            Debug.LogError("LevelTest: No words in vocabData!");
+            return;
         }
 
-        // Shuffle questions
-        n = questionPool.Count;  
-        while (n > 1) {  
-            n--;  
-            int k = rng.Next(n + 1);  
-            var value = questionPool[k];  
-            questionPool[k] = questionPool[n];  
-            questionPool[n] = value;  
+        for (int i = 0; i < 20; i++) {
+            var v = words[i % words.Count];
+            string type = (i % 2 == 0) ? "reading" : "meaning";
+            questionPool.Add(new Dictionary<string, object> { { "vocab", v }, { "type", type } });
         }
-
-        passingScore = (int)(questionPool.Count * 0.8f);
-        progressLabel.gameObject.SetActive(true);
+        
+        questionPool = questionPool.OrderBy(a => Random.value).ToList();
+        currentQIdx = 0;
+        score = 0;
+        Debug.Log($"LevelTest: Pool built with {questionPool.Count} questions.");
         NextQuestion();
     }
 
     void NextQuestion()
     {
-        if (currentQIdx >= questionPool.Count)
-        {
-            ShowSummary();
-            return;
-        }
+        Debug.Log($"LevelTest: NextQuestion index {currentQIdx}");
+        if (currentQIdx >= questionPool.Count) { ShowSummary(); return; }
 
         state = "PLAYING";
-        progressLabel.text = $"Question {currentQIdx + 1} / {questionPool.Count}";
+        selectedOption = -1;
+        if (progressLabel != null) progressLabel.text = $"Question {currentQIdx + 1} / {questionPool.Count}";
+        if (feedbackLabel != null) feedbackLabel.gameObject.SetActive(false);
+        if (wordLabel != null) wordLabel.gameObject.SetActive(true);
+        if (promptLabel != null) promptLabel.gameObject.SetActive(true);
+        if (optionsContainer != null) optionsContainer.gameObject.SetActive(true);
 
         var q = questionPool[currentQIdx];
+        if (!q.ContainsKey("vocab") || q["vocab"] == null) {
+            Debug.LogError("LevelTest: Question vocab is NULL!");
+            currentQIdx++; NextQuestion(); return;
+        }
+
         CurriculumItem vocab = (CurriculumItem)q["vocab"];
-        string qType = q["type"].ToString();
+        string qType = q.ContainsKey("type") ? q["type"].ToString() : "reading";
 
         string correctAns = "";
-        List<string> pool = new List<string>();
+        List<string> choices = new List<string>();
 
-        if (qType == "kana_romaji")
-        {
-            correctAns = vocab.romaji;
-            foreach (var v in vocabData) if (v.romaji != correctAns && !string.IsNullOrEmpty(v.romaji)) pool.Add(v.romaji);
-            wordLabel.text = vocab.kana;
-            promptLabel.text = "Choose the reading:";
-        }
-        else if (qType == "meaning")
-        {
-            correctAns = vocab.meaning;
-            foreach (var v in vocabData) if (v.meaning != correctAns && !string.IsNullOrEmpty(v.meaning)) pool.Add(v.meaning);
-            wordLabel.text = vocab.kana;
-            promptLabel.text = "What is the meaning?";
+        if (qType == "reading") {
+            correctAns = string.IsNullOrEmpty(vocab.romaji) ? vocab.meaning : vocab.romaji;
+            if (wordLabel != null) wordLabel.text = vocab.kana; 
+            if (promptLabel != null) promptLabel.text = "Choose the reading:";
+            foreach (var v in vocabData) { 
+                string s = string.IsNullOrEmpty(v.romaji) ? v.meaning : v.romaji; 
+                if (s != correctAns && !choices.Contains(s)) choices.Add(s); 
+            }
+        } else {
+            correctAns = string.IsNullOrEmpty(vocab.meaning) ? vocab.romaji : vocab.meaning;
+            if (wordLabel != null) wordLabel.text = vocab.kana; 
+            if (promptLabel != null) promptLabel.text = "Choose the meaning:";
+            foreach (var v in vocabData) { 
+                string s = string.IsNullOrEmpty(v.meaning) ? v.romaji : v.meaning; 
+                if (s != correctAns && !choices.Contains(s)) choices.Add(s); 
+            }
         }
 
-        System.Random r = new System.Random();
-        pool = new List<string>(pool.OrderBy(a => r.Next()));
-        List<string> options = pool.Take(3).ToList();
-        options.Add(correctAns);
-        options = options.OrderBy(a => r.Next()).ToList();
+        if (choices.Count < 3) {
+            string[] fillers = { "a", "i", "u", "e", "o", "ka", "ki", "ku", "ke", "ko" };
+            foreach(var f in fillers) if (f != correctAns && !choices.Contains(f) && choices.Count < 3) choices.Add(f);
+        }
+
+        choices = choices.OrderBy(a => Random.value).Take(3).ToList();
+        choices.Add(correctAns);
+        choices = choices.OrderBy(a => Random.value).ToList();
 
         currentQ["correct"] = correctAns;
-        currentQ["options"] = options;
+        currentQ["options"] = choices;
 
-        foreach (Transform child in optionsContainer)
-        {
-            Destroy(child.gameObject);
+        if (optionsContainer != null) {
+            optionsContainer.gameObject.SetActive(true);
+            Debug.Log("LevelTest: Clearing and building options...");
+            foreach (Transform child in optionsContainer) Destroy(child.gameObject);
+            
+            for (int i = 0; i < choices.Count; i++) {
+                int idx = i;
+                if (optionButtonPrefab == null) {
+                    Debug.LogError("LevelTest: optionButtonPrefab is NULL!");
+                    continue;
+                }
+                GameObject btnObj = Instantiate(optionButtonPrefab, optionsContainer);
+                btnObj.SetActive(true);
+                Button btn = btnObj.GetComponent<Button>();
+                if (btn == null) {
+                    Debug.LogError("LevelTest: Button component missing on instantiated option!");
+                    continue;
+                }
+                
+                var txt = btn.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (txt != null) {
+                    txt.gameObject.SetActive(true);
+                    txt.text = choices[i];
+                    txt.color = Color.white;
+                    txt.enableAutoSizing = true;
+                    txt.fontSizeMin = 8;
+                    txt.fontSizeMax = 18;
+                    txt.enableWordWrapping = true;
+                    txt.alignment = TextAlignmentOptions.Center;
+                    
+                    // Force padding via RectTransform if possible
+                    var rt = txt.GetComponent<RectTransform>();
+                    if (rt != null) {
+                        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+                        rt.offsetMin = new Vector2(10, 5); rt.offsetMax = new Vector2(-10, -5);
+                    }
+                }
+
+                if (btn.image != null) btn.image.color = new Color(0.15f, 0.15f, 0.2f);
+                btn.onClick.AddListener(() => OnOptionPressed(idx));
+            }
         }
 
-        selectedOption = -1;
-
-        for (int i = 0; i < options.Count; i++)
-        {
-            int captureIndex = i;
-            GameObject btnObj = Instantiate(optionButtonPrefab, optionsContainer);
-            Button btn = btnObj.GetComponent<Button>();
-            btn.GetComponentInChildren<TextMeshProUGUI>().text = options[i];
-            btn.onClick.AddListener(() => OnOptionPressed(captureIndex));
+        if (btnSubmit != null) {
+            var submitText = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (submitText != null) {
+                submitText.text = "Confirm";
+                submitText.color = Color.gray;
+            }
+            btnSubmit.interactable = false;
         }
-
-        wordLabel.gameObject.SetActive(true);
-        promptLabel.gameObject.SetActive(true);
-        optionsContainer.gameObject.SetActive(true);
-
-        btnSubmit.GetComponentInChildren<TextMeshProUGUI>().text = "Confirm";
-        btnSubmit.interactable = false;
-        btnSubmit.gameObject.SetActive(true);
-
-        feedbackLabel.gameObject.SetActive(false);
     }
 
     void OnOptionPressed(int idx)
     {
         if (state != "PLAYING") return;
         selectedOption = idx;
-        btnSubmit.interactable = true;
-
+        if (btnSubmit != null) {
+            btnSubmit.interactable = true;
+            var t = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (t != null) t.color = Color.white;
+        }
+        
         int i = 0;
-        foreach (Transform child in optionsContainer)
-        {
-            Image img = child.GetComponent<Image>();
-            if (img != null) img.color = (i == idx) ? new Color(0.5f, 0.8f, 1.0f) : Color.white;
+        foreach (Transform child in optionsContainer) {
+            Button btn = child.GetComponent<Button>();
+            if (btn != null) btn.image.color = (i == idx) ? new Color(0.25f, 0.25f, 0.35f) : new Color(0.15f, 0.15f, 0.2f);
             i++;
         }
     }
 
     void OnSubmitPressed()
     {
-        if (state == "PLAYING")
-        {
-            var optionsList = (List<string>)currentQ["options"];
-            bool isCorrect = optionsList[selectedOption] == (string)currentQ["correct"];
-
-            if (isCorrect)
-            {
-                score += 1;
-                feedbackLabel.text = "Correct!";
-                feedbackLabel.color = new Color(0.4f, 1.0f, 0.4f);
-                Global.Coins += 10;
+        if (state == "PLAYING") {
+            var choicesList = (List<string>)currentQ["options"];
+            bool correct = choicesList[selectedOption] == (string)currentQ["correct"];
+            
+            if (correct) { 
+                score++; 
+                feedbackLabel.text = "Correct!"; 
+                feedbackLabel.color = Color.green; 
+            } else { 
+                feedbackLabel.text = "Wrong! Answer: " + currentQ["correct"]; 
+                feedbackLabel.color = Color.red; 
             }
-            else
-            {
-                feedbackLabel.text = "Wrong! Answer: " + currentQ["correct"];
-                feedbackLabel.color = new Color(1.0f, 0.4f, 0.4f);
-            }
+            
+            if (wordLabel != null) wordLabel.gameObject.SetActive(false);
+            if (promptLabel != null) promptLabel.gameObject.SetActive(false);
+            if (optionsContainer != null) optionsContainer.gameObject.SetActive(false);
 
-            state = "RESULT";
-            wordLabel.gameObject.SetActive(false);
-            promptLabel.gameObject.SetActive(false);
-            optionsContainer.gameObject.SetActive(false);
-
-            btnSubmit.GetComponentInChildren<TextMeshProUGUI>().text = "Next";
             feedbackLabel.gameObject.SetActive(true);
-        }
-        else if (state == "RESULT")
-        {
-            currentQIdx += 1;
+            var t = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (t != null) t.text = "Next";
+            state = "RESULT";
+        } else if (state == "RESULT") {
+            currentQIdx++;
             NextQuestion();
-        }
-        else if (state == "SUMMARY")
-        {
-            UnityEngine.SceneManagement.SceneManager.LoadScene("Main");
+        } else if (state == "SUMMARY") {
+            SceneManager.LoadScene("Main");
         }
     }
 
     void ShowSummary()
     {
         state = "SUMMARY";
-        wordLabel.gameObject.SetActive(false);
-        promptLabel.gameObject.SetActive(false);
-        optionsContainer.gameObject.SetActive(false);
-        progressLabel.gameObject.SetActive(false);
-        btnBack.gameObject.SetActive(false);
-
-        feedbackLabel.gameObject.SetActive(true);
-
-        bool passed = score >= passingScore;
-        string resultStr = passed ? "LEVEL PASSED!" : "LEVEL FAILED";
-        feedbackLabel.text = $"{resultStr}\nScore: {score}/{questionPool.Count}\nRequired: {passingScore}";
-        feedbackLabel.color = passed ? new Color(0.4f, 1.0f, 0.4f) : new Color(1.0f, 0.4f, 0.4f);
-
-        if (passed && Global.CurrentLevel == Global.SoloTargetLevel) {
-            Global.CurrentLevel += 1;
-            // You might want to sync this to server here
+        if (wordLabel != null) wordLabel.gameObject.SetActive(false);
+        if (promptLabel != null) promptLabel.gameObject.SetActive(false);
+        if (optionsContainer != null) optionsContainer.gameObject.SetActive(false);
+        if (progressLabel != null) progressLabel.gameObject.SetActive(false);
+        
+        bool passed = (score >= passingScore);
+        if (feedbackLabel != null) {
+            feedbackLabel.text = passed ? "LEVEL PASSED!" : "LEVEL FAILED";
+            feedbackLabel.text += $"\nYour Score: {score} / {questionPool.Count}";
+            feedbackLabel.color = passed ? Color.green : Color.red;
+            feedbackLabel.gameObject.SetActive(true);
         }
 
-        btnSubmit.GetComponentInChildren<TextMeshProUGUI>().text = "Main Menu";
+        if (passed && Global.CurrentLevel == Global.SoloTargetLevel) {
+            Global.CurrentLevel++;
+        }
+
+        if (btnSubmit != null) {
+            var t = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (t != null) t.text = "Main Menu";
+            btnSubmit.interactable = true;
+        }
     }
 }

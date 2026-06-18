@@ -67,7 +67,7 @@ public class SceneSetupTool : EditorWindow
         globalManagers.AddComponent<Database>();
         globalManagers.AddComponent<SRSManager>();
 
-        CreateText(canvasObj.transform, "Title", "JAPANESE MASTERY LOGIN", 60, new Vector2(0, 200), Color.white, true);
+        CreateText(canvasObj.transform, "Title", "JAPANESE MASTERY LOGIN", 60, new Vector2(0, 260), Color.white, true);
         
         GameObject userObj = CreateInputField(canvasObj.transform, "UsernameInput", "Username", new Vector2(200, -20));
         GameObject passObj = CreateInputField(canvasObj.transform, "PasswordInput", "Password", new Vector2(200, -90));
@@ -145,7 +145,7 @@ public class SceneSetupTool : EditorWindow
         GameObject coinObj = CreateText(topBar.transform, "CoinLabel", "G-Coins: 0", 24, new Vector2(250, -30), new Color(1.0f, 0.8f, 0.2f), false);
 
         // Title with Outline
-        GameObject titleObj = CreateText(canvasObj.transform, "Title", "JAPANESE MASTERY", 80, new Vector2(0, 220), new Color(1f, 0.85f, 0.4f), true);
+        GameObject titleObj = CreateText(canvasObj.transform, "Title", "JAPANESE MASTERY", 80, new Vector2(0, 330), new Color(1f, 0.85f, 0.4f), true);
         Outline outline = titleObj.AddComponent<Outline>();
         outline.effectColor = new Color(0.2f, 0.1f, 0f, 1f); // Dark brown shadow
         outline.effectDistance = new Vector2(4, -4);
@@ -204,9 +204,15 @@ public class SceneSetupTool : EditorWindow
         if (parent.name == "TopBar") {
             rt.anchorMin = new Vector2(0.5f, 1);
             rt.anchorMax = new Vector2(0.5f, 1);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+        } else if (name == "Title") {
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(1, 1);
+            rt.pivot = new Vector2(0.5f, 1);
         } else {
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
         }
         rt.anchoredPosition = pos;
         rt.sizeDelta = new Vector2(1200, 150);

@@ -42,3 +42,6 @@ JMdict_e
 __pycache__/
 *.py[cod]
 *$py.class
+
+# bz2
+*.bz2
