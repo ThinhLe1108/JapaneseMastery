@@ -18,7 +18,7 @@ EditorBuildSettings:
     path: Assets/Scenes/LevelTest.unity
     guid: 5bcc6413c35b13d4c8be6d51a90cfbf3
   - enabled: 1
-    path: Assets/Scenes/QuantumTest.unity
+    path: Assets/Scenes/RandomTest.unity
     guid: 589f5139e754f114bae787f0a938f7b6
   - enabled: 1
     path: Assets/Scenes/SoloLearning.unity
@@ -26,4 +26,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PvP.unity
     guid: 0eba25b38d0b28c4fa3440eed542fb07
+  - enabled: 1
+    path: Assets/Scenes/DesignerPanel.unity
+    guid: 114ae07acf0882e47bd95db78bc8e5a3
+  - enabled: 1
+    path: Assets/Scenes/Shop.unity
+    guid: f24aa295dc406e0489f3097ecb521b28
   m_configObjects: {}

@@ -24,6 +24,31 @@ public class NetworkManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         _isShuttingDown = true;
+        
+        // Unity kills Coroutines on quit, so we must use a synchronous WebRequest 
+        // to ensure the backend actually receives the logout command and deletes the access_token.
+        if (isLoggedIn && !string.IsNullOrEmpty(jwtToken) && Global.UserId != -1)
+        {
+            try 
+            {
+                var request = System.Net.WebRequest.Create(BASE_URL + $"/api/auth/logout/{Global.UserId}");
+                request.Method = "POST";
+                request.Headers.Add("Authorization", "Bearer " + jwtToken);
+                request.ContentType = "application/json";
+                request.ContentLength = 0;
+                request.GetResponse().Close(); // Synchronous blocking call
+                Debug.Log("Synchronous logout to backend successful on quit.");
+            } 
+            catch (Exception e) 
+            {
+                Debug.LogWarning("Failed to notify backend of logout on quit: " + e.Message);
+            }
+        }
+
+        // Log out locally and clear any saved tokens
+        Logout(true);
+        PlayerPrefs.DeleteKey("jwt_token");
+        PlayerPrefs.Save();
     }
 
     private void OnDestroy()

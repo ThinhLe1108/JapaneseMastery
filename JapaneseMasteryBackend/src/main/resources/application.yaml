@@ -2,6 +2,11 @@ spring:
   application:
     name: japanese-game
 
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
   datasource:
     url: jdbc:sqlserver://localhost:1433;databaseName=JapaneseMastery;encrypt=true;trustServerCertificate=true
     username: sa

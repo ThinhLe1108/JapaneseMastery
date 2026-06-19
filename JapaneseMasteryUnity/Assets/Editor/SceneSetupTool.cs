@@ -7,6 +7,19 @@ using TMPro;
 
 public class SceneSetupTool : EditorWindow
 {
+    [InitializeOnLoadMethod]
+    static void AutoGenerateMissingScenes()
+    {
+        EditorApplication.delayCall += () =>
+        {
+            if (!System.IO.File.Exists("Assets/Scenes/DesignerPanel.unity"))
+            {
+                GenerateDesignerScene();
+                Debug.Log("DesignerPanel.unity was automatically generated.");
+            }
+        };
+    }
+
     [MenuItem("Japanese Mastery/Auto Setup Scenes")]
     public static void ShowWindow()
     {
@@ -31,9 +44,147 @@ public class SceneSetupTool : EditorWindow
         {
             GenerateAdminScene();
         }
+
+        if (GUILayout.Button("4. Generate Designer Scene"))
+        {
+            GenerateDesignerScene();
+        }
         
         GUILayout.Space(20);
         GUILayout.Label("Note: Ensure TextMeshPro Essentials are imported first!", EditorStyles.helpBox);
+    }
+
+    private static void GenerateDesignerScene()
+    {
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        
+        GameObject camObj = new GameObject("Main Camera");
+        Camera cam = camObj.AddComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0.12f, 0.12f, 0.16f); 
+
+        GameObject canvasObj = new GameObject("Canvas");
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1280, 720);
+        canvasObj.AddComponent<GraphicRaycaster>();
+
+        GameObject eventSystem = new GameObject("EventSystem");
+        eventSystem.AddComponent<EventSystem>();
+        eventSystem.AddComponent<StandaloneInputModule>();
+
+        GameObject managerObj = new GameObject("DesignerPanelManager");
+        DesignerPanelManager manager = managerObj.AddComponent<DesignerPanelManager>();
+
+        // Header
+        CreateText(canvasObj.transform, "Title", "DESIGNER PANEL", 48, new Vector2(0, 300), Color.white, true);
+
+        // Back Button
+        GameObject btnBack = CreateButton(canvasObj.transform, "BtnBack", "Back", new Vector2(-540, 300), new Vector2(120, 50), new Color(0.2f, 0.2f, 0.2f));
+        
+        // Upload Panel
+        GameObject uploadPanel = new GameObject("UploadPanel");
+        uploadPanel.transform.SetParent(canvasObj.transform, false);
+        RectTransform upRt = uploadPanel.AddComponent<RectTransform>();
+        upRt.anchoredPosition = new Vector2(-300, 0);
+        upRt.sizeDelta = new Vector2(500, 500);
+
+        CreateText(uploadPanel.transform, "LblUpload", "Upload New Item", 24, new Vector2(0, 200), Color.yellow, true);
+        GameObject nameInput = CreateInputField(uploadPanel.transform, "NameInput", "Item Name", new Vector2(0, 130));
+        GameObject priceInput = CreateInputField(uploadPanel.transform, "PriceInput", "Price (G-Coins)", new Vector2(0, 60));
+        GameObject pathInput = CreateInputField(uploadPanel.transform, "PathInput", "File Path (C:/image.png)", new Vector2(0, -10));
+
+        // Dropdown (Basic setup so DesignerPanelManager doesn't throw NRE)
+        GameObject typeObj = new GameObject("TypeDropdown");
+        typeObj.transform.SetParent(uploadPanel.transform, false);
+        RectTransform typeRt = typeObj.AddComponent<RectTransform>();
+        typeRt.anchoredPosition = new Vector2(0, -80);
+        typeRt.sizeDelta = new Vector2(400, 50);
+        Image typeImg = typeObj.AddComponent<Image>();
+        typeImg.color = new Color(0.12f, 0.13f, 0.17f);
+        TMP_Dropdown dropdown = typeObj.AddComponent<TMP_Dropdown>();
+        dropdown.options.Add(new TMP_Dropdown.OptionData("THEME"));
+        dropdown.options.Add(new TMP_Dropdown.OptionData("BACKGROUND"));
+        
+        GameObject labelObj = new GameObject("Label");
+        labelObj.transform.SetParent(typeObj.transform, false);
+        TextMeshProUGUI labelTmp = labelObj.AddComponent<TextMeshProUGUI>();
+        labelTmp.text = "THEME";
+        labelTmp.fontSize = 20;
+        labelTmp.alignment = TextAlignmentOptions.Left;
+        labelTmp.color = Color.white;
+        RectTransform labelRt = labelTmp.rectTransform;
+        labelRt.anchorMin = Vector2.zero; labelRt.anchorMax = Vector2.one;
+        labelRt.sizeDelta = new Vector2(-20, 0);
+        dropdown.captionText = labelTmp;
+
+        GameObject btnAdd = CreateButton(uploadPanel.transform, "BtnAdd", "Upload Item", new Vector2(0, -160), new Vector2(400, 60), new Color(0.1f, 0.4f, 0.1f));
+        GameObject statusLabel = CreateText(uploadPanel.transform, "StatusLabel", "Ready", 18, new Vector2(0, -220), Color.gray, false);
+
+        // List Panel
+        GameObject listPanel = new GameObject("ListPanel");
+        listPanel.transform.SetParent(canvasObj.transform, false);
+        RectTransform lpRt = listPanel.AddComponent<RectTransform>();
+        lpRt.anchoredPosition = new Vector2(300, 0);
+        lpRt.sizeDelta = new Vector2(600, 500);
+
+        CreateText(listPanel.transform, "LblList", "Your Items", 24, new Vector2(0, 220), Color.cyan, true);
+        GameObject searchInput = CreateInputField(listPanel.transform, "SearchInput", "Search...", new Vector2(0, 170));
+        searchInput.GetComponent<RectTransform>().sizeDelta = new Vector2(550, 40);
+
+        GameObject container = new GameObject("ItemsContainer");
+        container.transform.SetParent(listPanel.transform, false);
+        RectTransform contRt = container.AddComponent<RectTransform>();
+        contRt.anchoredPosition = new Vector2(0, -30);
+        contRt.sizeDelta = new Vector2(550, 300);
+        VerticalLayoutGroup vlg = container.AddComponent<VerticalLayoutGroup>();
+        vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.spacing = 10; vlg.childAlignment = TextAnchor.UpperCenter;
+
+        GameObject pagination = new GameObject("Pagination");
+        pagination.transform.SetParent(listPanel.transform, false);
+        GameObject btnPrev = CreateButton(pagination.transform, "BtnPrev", "<", new Vector2(-100, -220), new Vector2(50, 40), new Color(0.2f, 0.2f, 0.2f));
+        GameObject lblPage = CreateText(pagination.transform, "LblPage", "1 / 1", 20, new Vector2(0, -220), Color.white, false);
+        GameObject btnNext = CreateButton(pagination.transform, "BtnNext", ">", new Vector2(100, -220), new Vector2(50, 40), new Color(0.2f, 0.2f, 0.2f));
+
+        // Prefab Row
+        GameObject prefab = new GameObject("ItemRowPrefab");
+        prefab.transform.SetParent(managerObj.transform, false);
+        prefab.SetActive(false);
+        RectTransform prefabRt = prefab.AddComponent<RectTransform>();
+        prefabRt.sizeDelta = new Vector2(550, 40);
+        Image pImg = prefab.AddComponent<Image>();
+        pImg.color = new Color(0.15f, 0.15f, 0.2f);
+        DesignerItemRow rowUI = prefab.AddComponent<DesignerItemRow>();
+        
+        rowUI.lblName = CreateText(prefab.transform, "Name", "Item Name", 18, new Vector2(-150, 0), Color.white, false, TextAlignmentOptions.Left).GetComponent<TextMeshProUGUI>();
+        rowUI.lblName.rectTransform.sizeDelta = new Vector2(250, 40);
+        rowUI.lblType = CreateText(prefab.transform, "Type", "TYPE", 16, new Vector2(50, 0), Color.gray, false).GetComponent<TextMeshProUGUI>();
+        rowUI.lblType.rectTransform.sizeDelta = new Vector2(100, 40);
+        rowUI.lblPrice = CreateText(prefab.transform, "Price", "500G", 16, new Vector2(150, 0), Color.yellow, false).GetComponent<TextMeshProUGUI>();
+        rowUI.lblPrice.rectTransform.sizeDelta = new Vector2(80, 40);
+        rowUI.lblStatus = CreateText(prefab.transform, "Status", "Pending", 14, new Vector2(240, 0), Color.white, false).GetComponent<TextMeshProUGUI>();
+        rowUI.lblStatus.rectTransform.sizeDelta = new Vector2(100, 40);
+
+        // Bindings
+        manager.statusLabel = statusLabel.GetComponent<TextMeshProUGUI>();
+        manager.nameInput = nameInput.GetComponent<TMP_InputField>();
+        manager.priceInput = priceInput.GetComponent<TMP_InputField>();
+        manager.pathInput = pathInput.GetComponent<TMP_InputField>();
+        manager.typeOpt = dropdown;
+        manager.btnAdd = btnAdd.GetComponent<Button>();
+        manager.btnBack = btnBack.GetComponent<Button>();
+        manager.searchInput = searchInput.GetComponent<TMP_InputField>();
+        manager.itemsContainer = container.transform;
+        manager.itemRowPrefab = prefab;
+        manager.lblPage = lblPage.GetComponent<TextMeshProUGUI>();
+        manager.btnPrev = btnPrev.GetComponent<Button>();
+        manager.btnNext = btnNext.GetComponent<Button>();
+
+        System.IO.Directory.CreateDirectory("Assets/Scenes");
+        EditorSceneManager.SaveScene(scene, "Assets/Scenes/DesignerPanel.unity");
+        AddSceneToBuildSettings("Assets/Scenes/DesignerPanel.unity");
     }
 
     private static void GenerateLoginScene()

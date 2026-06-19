@@ -48,4 +48,21 @@ public class User {
     @Column(name = "word_jp", columnDefinition = "NVARCHAR(255)")
     @Builder.Default
     private Set<String> learnedWords = new HashSet<>();
+
+    // -- Shop & Customization --
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "user_purchased_items",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "item_id"))
+    @Builder.Default
+    private Set<ShopItem> purchasedItems = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "active_theme_id")
+    private ShopItem activeTheme;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "active_background_id")
+    private ShopItem activeBackground;
 }
