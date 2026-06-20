@@ -36,6 +36,9 @@ public class PvPService {
     private ConcurrentHashMap<String, PvPMatch> activeMatches = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Long, String> userMatchMap = new ConcurrentHashMap<>();
 
+    // Lobby system
+    private ConcurrentHashMap<String, Long> lobbies = new ConcurrentHashMap<>(); // lobbyCode -> hostUserId
+
     @PostConstruct
     public void init() {
         String filePath = "pvp_paragraphs.txt";
@@ -377,5 +380,136 @@ public class PvPService {
                 }
             }
         }
+    }
+
+    // ============ LOBBY SYSTEM ============
+
+    public synchronized Map<String, Object> createLobby(Long userId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        // Check if user is already in a match
+        if (userMatchMap.containsKey(userId)) {
+            String matchId = userMatchMap.get(userId);
+            PvPMatch match = activeMatches.get(matchId);
+            if (match != null && !"FINISHED".equals(match.getState())) {
+                response.put("error", "ALREADY_IN_MATCH");
+                return response;
+            }
+            acknowledgeFinish(userId);
+        }
+
+        // Check ban
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            response.put("error", "USER_NOT_FOUND");
+            return response;
+        }
+        if (user.getPvpBanUntil() != null && user.getPvpBanUntil().isAfter(LocalDateTime.now())) {
+            response.put("error", "BANNED");
+            return response;
+        }
+
+        // Remove any existing lobby by this user
+        lobbies.entrySet().removeIf(entry -> entry.getValue().equals(userId));
+
+        // Generate unique code
+        String code = generateLobbyCode();
+        while (lobbies.containsKey(code)) {
+            code = generateLobbyCode();
+        }
+
+        lobbies.put(code, userId);
+        response.put("lobbyCode", code);
+        response.put("status", "LOBBY_CREATED");
+        return response;
+    }
+
+    public synchronized Map<String, Object> joinLobby(String code, Long userId) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (!lobbies.containsKey(code)) {
+            response.put("error", "LOBBY_NOT_FOUND");
+            return response;
+        }
+
+        Long hostId = lobbies.get(code);
+        if (hostId.equals(userId)) {
+            response.put("error", "CANNOT_JOIN_OWN_LOBBY");
+            return response;
+        }
+
+        // Check if joiner is already in a match
+        if (userMatchMap.containsKey(userId)) {
+            String existingMatch = userMatchMap.get(userId);
+            PvPMatch em = activeMatches.get(existingMatch);
+            if (em != null && !"FINISHED".equals(em.getState())) {
+                response.put("error", "ALREADY_IN_MATCH");
+                return response;
+            }
+            acknowledgeFinish(userId);
+        }
+
+        // Check ban for joiner
+        User joiner = userRepository.findById(userId).orElse(null);
+        if (joiner == null) {
+            response.put("error", "USER_NOT_FOUND");
+            return response;
+        }
+        if (joiner.getPvpBanUntil() != null && joiner.getPvpBanUntil().isAfter(LocalDateTime.now())) {
+            response.put("error", "BANNED");
+            return response;
+        }
+
+        // Remove lobby entry
+        lobbies.remove(code);
+
+        // Also remove host from random queues if they were in one
+        queueUnder25.remove(hostId);
+        queueOver24.remove(hostId);
+        queueUnder25.remove(userId);
+        queueOver24.remove(userId);
+
+        // Create match between host and joiner
+        String matchId = UUID.randomUUID().toString();
+        PvPMatch match = new PvPMatch();
+        match.setMatchId(matchId);
+        match.setPlayer1Id(hostId);
+        match.setPlayer2Id(userId);
+
+        String p = getRandomParagraph();
+        if (p == null || p.trim().isEmpty()) p = "これはテストの文章です。";
+        p = p.replace("\r", "").replace("\n", " ").trim();
+        match.setParagraph(p);
+
+        String rp = RomajiConverter.toRomaji(p);
+        if (rp == null || rp.trim().isEmpty()) rp = "error";
+        match.setRomajiParagraph(rp);
+
+        match.setState("COUNTDOWN");
+        match.setP1TimeMs(System.currentTimeMillis() + 3000);
+
+        activeMatches.put(matchId, match);
+        userMatchMap.put(hostId, matchId);
+        userMatchMap.put(userId, matchId);
+
+        response.put("status", "MATCH_CREATED");
+        response.put("matchId", matchId);
+        return response;
+    }
+
+    public synchronized void cancelLobby(String code, Long userId) {
+        Long hostId = lobbies.get(code);
+        if (hostId != null && hostId.equals(userId)) {
+            lobbies.remove(code);
+        }
+    }
+
+    private String generateLobbyCode() {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I/O/0/1 to avoid confusion
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

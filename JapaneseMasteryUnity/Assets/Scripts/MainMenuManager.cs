@@ -15,7 +15,6 @@ public class MainMenuManager : MonoBehaviour
     public TextMeshProUGUI titleLabel;
 
     public Button btnPlacement;
-    public Button btnQuantum;
     public Button btnSolo;
     public Button btnPvP;
     public Button btnShop;
@@ -47,7 +46,6 @@ public class MainMenuManager : MonoBehaviour
         RefreshData();
         
         btnPlacement.onClick.AddListener(() => SceneManager.LoadScene("LevelTest"));
-        btnQuantum.onClick.AddListener(OnQuantumPressed);
         btnSolo.onClick.AddListener(OnSoloPressed);
         btnPvP.onClick.AddListener(OnPvPPressed);
         btnShop.onClick.AddListener(() => SceneManager.LoadScene("Shop"));
@@ -291,7 +289,6 @@ public class MainMenuManager : MonoBehaviour
         btnSolo.gameObject.SetActive(false);
         btnPvP.gameObject.SetActive(false);
         btnShop.gameObject.SetActive(false);
-        btnQuantum.gameObject.SetActive(false);
 
         if (role == "ADMIN")
         {
@@ -317,7 +314,6 @@ public class MainMenuManager : MonoBehaviour
             btnSolo.gameObject.SetActive(true);
             btnPvP.gameObject.SetActive(true);
             btnShop.gameObject.SetActive(true);
-            btnQuantum.gameObject.SetActive(true);
             btnEnterTestCode.gameObject.SetActive(true);
         }
     }

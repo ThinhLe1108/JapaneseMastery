@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.37311953, g: 0.38074014, b: 0.3587274, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1092,15 +1092,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 138b9f3511fe90f4f9b03fc8414987cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  progressLabel: {fileID: 0}
-  wordLabel: {fileID: 0}
-  promptLabel: {fileID: 0}
-  optionsContainer: {fileID: 0}
-  btnSubmit: {fileID: 0}
-  btnBack: {fileID: 0}
-  feedbackLabel: {fileID: 0}
-  optionButtonPrefab: {fileID: 0}
-  backgroundImage: {fileID: 0}
+  progressLabel: {fileID: 1951460}
+  wordLabel: {fileID: 881911398}
+  promptLabel: {fileID: 548189139}
+  optionsContainer: {fileID: 1024875039}
+  btnSubmit: {fileID: 408398678}
+  btnBack: {fileID: 1623385570}
+  feedbackLabel: {fileID: 77726048}
+  optionButtonPrefab: {fileID: 2053909006}
+  backgroundImage: {fileID: 1397929053}
 --- !u!1 &881911395
 GameObject:
   m_ObjectHideFlags: 0

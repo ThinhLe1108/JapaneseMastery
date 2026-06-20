@@ -351,7 +351,7 @@ public class LevelTestManager : MonoBehaviour
             feedbackLabel.gameObject.SetActive(true);
         }
 
-        if (passed && Global.CurrentLevel == Global.SoloTargetLevel) {
+        if (passed) {
             Global.CurrentLevel++;
         }
 
