@@ -23,9 +23,20 @@ public class PvPManager : MonoBehaviour
 
     [Header("UI Panels")]
     public GameObject pvpCanvas;
+    public GameObject lobbyPanel;
+    public GameObject lobbyWaitPanel;
     public GameObject queuePanel;
     public GameObject matchPanel;
     public GameObject resultPanel;
+
+    [Header("Lobby UI")]
+    public TMP_InputField lobbyCodeInput;
+    public TMP_Text lobbyCodeText;
+    public Button btnRandomMatch;
+    public Button btnCreateLobby;
+    public Button btnJoinLobby;
+    public Button btnBackToMain;
+    public Button btnCancelLobby;
 
     [Header("Text Components")]
     public TMP_Text paragraphText;
@@ -57,6 +68,9 @@ public class PvPManager : MonoBehaviour
     private float countdownEndTime = 0f;
     private float syncTimer = 0f;
 
+    private string currentLobbyCode = "";
+    private bool isLobbyHost = false;
+
     private TMP_InputField hiddenInput;
 
     private void Awake()
@@ -66,6 +80,13 @@ public class PvPManager : MonoBehaviour
         if (btnCancel != null) btnCancel.onClick.AddListener(() => { LeaveQueue(); Global.GotoScene("Main"); });
         if (btnQuitMatch != null) btnQuitMatch.onClick.AddListener(QuitMatch);
         if (btnReturn != null) btnReturn.onClick.AddListener(() => { inMatch = false; HideAllPanels(); Global.GotoScene("Main"); });
+
+        // Lobby buttons
+        if (btnRandomMatch != null) btnRandomMatch.onClick.AddListener(OnClickRandomMatch);
+        if (btnCreateLobby != null) btnCreateLobby.onClick.AddListener(OnClickCreateLobby);
+        if (btnJoinLobby != null) btnJoinLobby.onClick.AddListener(OnClickJoinLobby);
+        if (btnBackToMain != null) btnBackToMain.onClick.AddListener(() => { HideAllPanels(); Global.GotoScene("Main"); });
+        if (btnCancelLobby != null) btnCancelLobby.onClick.AddListener(OnClickCancelLobby);
     }
 
     private void Start()
@@ -73,14 +94,121 @@ public class PvPManager : MonoBehaviour
         HideAllPanels();
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "PvP")
         {
-            OnClickPvPButton();
+            ShowLobby();
         }
     }
 
-    public void OnClickPvPButton()
+    // ============ LOBBY ============
+
+    private void ShowLobby()
     {
+        HideAllPanels();
+        if (pvpCanvas != null) pvpCanvas.SetActive(true);
+        if (lobbyPanel != null) lobbyPanel.SetActive(true);
+    }
+
+    private void OnClickRandomMatch()
+    {
+        if (lobbyPanel != null) lobbyPanel.SetActive(false);
         ShowPanel(queuePanel);
         StartCoroutine(JoinQueueCoroutine());
+    }
+
+    private void OnClickCreateLobby()
+    {
+        StartCoroutine(CreateLobbyCoroutine());
+    }
+
+    private void OnClickJoinLobby()
+    {
+        string code = lobbyCodeInput != null ? lobbyCodeInput.text.Trim().ToUpper() : "";
+        if (string.IsNullOrEmpty(code))
+        {
+            Debug.LogWarning("Please enter a lobby code!");
+            return;
+        }
+        StartCoroutine(JoinLobbyCoroutine(code));
+    }
+
+    private void OnClickCancelLobby()
+    {
+        isPolling = false;
+        if (!string.IsNullOrEmpty(currentLobbyCode))
+        {
+            StartCoroutine(SimplePost(NetworkManager.Instance.BASE_URL + $"/api/pvp/lobby/cancel/{currentLobbyCode}/{Global.UserId}"));
+        }
+        currentLobbyCode = "";
+        isLobbyHost = false;
+        ShowLobby();
+    }
+
+    private IEnumerator CreateLobbyCoroutine()
+    {
+        string url = NetworkManager.Instance.BASE_URL + $"/api/pvp/lobby/create/{Global.UserId}";
+        using (UnityWebRequest req = new UnityWebRequest(url, "POST"))
+        {
+            req.SetRequestHeader("Authorization", "Bearer " + NetworkManager.Instance.jwtToken);
+            req.downloadHandler = new DownloadHandlerBuffer();
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(req.downloadHandler.text);
+                currentLobbyCode = data.ContainsKey("lobbyCode") ? data["lobbyCode"].ToString() : "ERROR";
+                isLobbyHost = true;
+
+                // Show lobby wait panel
+                HideAllPanels();
+                if (pvpCanvas != null) pvpCanvas.SetActive(true);
+                if (lobbyWaitPanel != null) lobbyWaitPanel.SetActive(true);
+                if (lobbyCodeText != null) lobbyCodeText.text = "Code: " + currentLobbyCode;
+
+                // Start polling for opponent
+                isPolling = true;
+                StartCoroutine(PollStatusCoroutine());
+            }
+            else
+            {
+                Debug.LogError("Failed to create lobby: " + req.downloadHandler.text);
+            }
+        }
+    }
+
+    private IEnumerator JoinLobbyCoroutine(string code)
+    {
+        string url = NetworkManager.Instance.BASE_URL + $"/api/pvp/lobby/join/{code}/{Global.UserId}";
+        using (UnityWebRequest req = new UnityWebRequest(url, "POST"))
+        {
+            req.SetRequestHeader("Authorization", "Bearer " + NetworkManager.Instance.jwtToken);
+            req.downloadHandler = new DownloadHandlerBuffer();
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                currentLobbyCode = code;
+                isLobbyHost = false;
+
+                // Show queue panel while waiting for match to start
+                HideAllPanels();
+                if (pvpCanvas != null) pvpCanvas.SetActive(true);
+                if (queuePanel != null) queuePanel.SetActive(true);
+
+                isPolling = true;
+                StartCoroutine(PollStatusCoroutine());
+            }
+            else
+            {
+                Debug.LogWarning("Failed to join lobby: " + req.downloadHandler.text);
+                // Show error feedback - stay on lobby panel
+            }
+        }
+    }
+
+    // ============ ORIGINAL PVP LOGIC ============
+
+    public void OnClickPvPButton()
+    {
+        ShowLobby();
     }
 
     private IEnumerator JoinQueueCoroutine()
@@ -363,8 +491,8 @@ public class PvPManager : MonoBehaviour
         StringBuilder sb = new StringBuilder();
         foreach (char c in text)
         {
-            if (c == '<') sb.Append("＜");
-            else if (c == '>') sb.Append("＞");
+            if (c == '<') sb.Append("\uFF1C");
+            else if (c == '>') sb.Append("\uFF1E");
             else if (c == '\r') continue;
             else if (c == '\n') sb.Append(" ");
             else if (char.IsControl(c)) continue; // Strip control characters
@@ -419,6 +547,8 @@ public class PvPManager : MonoBehaviour
 
     private void HideAllPanels()
     {
+        if (lobbyPanel != null) lobbyPanel.SetActive(false);
+        if (lobbyWaitPanel != null) lobbyWaitPanel.SetActive(false);
         if (queuePanel != null) queuePanel.SetActive(false);
         if (matchPanel != null) matchPanel.SetActive(false);
         if (resultPanel != null) resultPanel.SetActive(false);

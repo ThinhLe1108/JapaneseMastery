@@ -161,6 +161,15 @@ public class DesignerPanelManager : MonoBehaviour
         {
             url = url.Substring(0, url.Length - 5) + ".png";
         }
+        // Cloudinary auto-generates video thumbnails when you request .jpg instead of .mp4
+        else if (url.EndsWith(".mp4"))
+        {
+            url = url.Substring(0, url.Length - 4) + ".jpg";
+        }
+        else if (url.EndsWith(".webm"))
+        {
+            url = url.Substring(0, url.Length - 5) + ".jpg";
+        }
 
         using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(url))
         {
