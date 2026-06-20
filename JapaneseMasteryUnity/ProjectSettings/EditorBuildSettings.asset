@@ -33,9 +33,6 @@ EditorBuildSettings:
     path: Assets/Scenes/SenseiTestManager.unity
     guid: 207563556d594404dae1a433c252574b
   - enabled: 1
-    path: Assets/Scenes/RandomTest.unity
-    guid: 589f5139e754f114bae787f0a938f7b6
-  - enabled: 1
     path: Assets/Scenes/CustomTestRoom.unity
     guid: 9e9fa653b7c684e449ab8d0205cf29fe
   m_configObjects: {}
