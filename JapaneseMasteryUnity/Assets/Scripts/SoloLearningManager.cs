@@ -255,7 +255,7 @@ public class SoloLearningManager : MonoBehaviour
             var rt = wordLabel.rectTransform;
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2(0, 50);
+            rt.anchoredPosition = new Vector2(0, 15);
         }
 
         if (romajiLabel != null) {
@@ -329,7 +329,7 @@ public class SoloLearningManager : MonoBehaviour
             var rt = wordLabel.rectTransform;
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2(0, 50);
+            rt.anchoredPosition = new Vector2(0, 15);
         }
 
         if (romajiLabel != null) {

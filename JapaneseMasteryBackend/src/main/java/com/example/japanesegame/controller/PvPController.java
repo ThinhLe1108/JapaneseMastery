@@ -58,4 +58,30 @@ public class PvPController {
         pvpService.acknowledgeFinish(userId);
         return ResponseEntity.ok("ACKNOWLEDGED");
     }
+
+    // ============ LOBBY ENDPOINTS ============
+
+    @PostMapping("/lobby/create/{userId}")
+    public ResponseEntity<Map<String, Object>> createLobby(@PathVariable Long userId) {
+        Map<String, Object> result = pvpService.createLobby(userId);
+        if (result.containsKey("error")) {
+            return ResponseEntity.badRequest().body(result);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/lobby/join/{code}/{userId}")
+    public ResponseEntity<Map<String, Object>> joinLobby(@PathVariable String code, @PathVariable Long userId) {
+        Map<String, Object> result = pvpService.joinLobby(code.toUpperCase(), userId);
+        if (result.containsKey("error")) {
+            return ResponseEntity.badRequest().body(result);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/lobby/cancel/{code}/{userId}")
+    public ResponseEntity<String> cancelLobby(@PathVariable String code, @PathVariable Long userId) {
+        pvpService.cancelLobby(code.toUpperCase(), userId);
+        return ResponseEntity.ok("LOBBY_CANCELLED");
+    }
 }

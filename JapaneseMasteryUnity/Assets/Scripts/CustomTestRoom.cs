@@ -9,8 +9,7 @@ using System.Linq;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 
-// Forced re-compile: 2026-06-16 11:00
-public class LevelTestManager : MonoBehaviour
+public class CustomTestRoom : MonoBehaviour
 {
     private static bool _instanceExists = false;
 
@@ -26,20 +25,18 @@ public class LevelTestManager : MonoBehaviour
     public Image backgroundImage;
 
     // Logic Data
-    private List<CurriculumItem> vocabData = new List<CurriculumItem>();
+    private Dictionary<string, object> testData;
     private List<Dictionary<string, object>> questionPool = new List<Dictionary<string, object>>();
     private int currentQIdx = 0;
     private int score = 0;
-    private int passingScore = 15; 
+    private int passingScore = 0; 
     private string state = "LOADING";
     private Dictionary<string, object> currentQ = new Dictionary<string, object>();
     private int selectedOption = -1;
 
     void Awake()
     {
-        Debug.Log("LevelTest: Manager Awake");
         if (_instanceExists) {
-            Debug.LogWarning("LevelTest: Duplicate manager detected. Destroying.");
             Destroy(gameObject);
             return;
         }
@@ -50,14 +47,26 @@ public class LevelTestManager : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("LevelTest: Manager Start");
         if (FindObjectOfType<EventSystem>() == null) {
             new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
         }
 
         FindUIReferences();
         SetupUI();
-        StartCoroutine(InitializationSequence());
+
+        testData = Global.CurrentCustomTest;
+        if (testData != null && testData.ContainsKey("questions")) {
+            string qJson = JsonConvert.SerializeObject(testData["questions"]);
+            questionPool = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(qJson);
+        }
+
+        if (questionPool == null || questionPool.Count == 0) {
+            if (wordLabel != null) wordLabel.text = "This test has no questions!";
+            if (btnSubmit != null) btnSubmit.gameObject.SetActive(false);
+        } else {
+            passingScore = questionPool.Count; // Need 100% to pass
+            GenerateQuestions();
+        }
     }
 
     void FindUIReferences()
@@ -72,8 +81,6 @@ public class LevelTestManager : MonoBehaviour
         if (backgroundImage == null) backgroundImage = GameObject.Find("Background")?.GetComponent<Image>();
         
         if (optionButtonPrefab == null) optionButtonPrefab = GameObject.Find("OptionButtonPrefab");
-        
-        Debug.Log($"LevelTest: Refs - Word:{wordLabel != null}, Prompt:{promptLabel != null}, Progress:{progressLabel != null}, Options:{optionsContainer != null}, Prefab:{optionButtonPrefab != null}");
     }
 
     void SetupUI()
@@ -88,36 +95,17 @@ public class LevelTestManager : MonoBehaviour
             if (t != null) { 
                 t.gameObject.SetActive(true);
                 t.text = "Cancel & Main Menu"; 
-                t.color = Color.white;
-                t.fontSize = 16;
             }
-            if (btnBack.image != null) {
-                btnBack.image.color = new Color(0.15f, 0.15f, 0.2f);
-                btnBack.image.raycastTarget = true;
-            }
-            btnBack.transform.SetAsLastSibling();
         }
         
         if (btnSubmit != null) {
             btnSubmit.onClick.RemoveAllListeners();
             btnSubmit.onClick.AddListener(OnSubmitPressed);
-            var t = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (t != null) { 
-                t.gameObject.SetActive(true);
-                t.text = "Confirm"; 
-                t.color = Color.gray; 
-                t.fontSize = 20;
-                t.alignment = TextAlignmentOptions.Center;
-            }
             btnSubmit.interactable = false;
-            btnSubmit.transform.SetAsLastSibling();
         }
 
         if (wordLabel != null) {
             wordLabel.text = "LOADING...";
-            wordLabel.color = Color.white;
-            wordLabel.fontSizeMax = 50; 
-            wordLabel.fontSizeMin = 18;
             wordLabel.enableAutoSizing = true;
         }
 
@@ -131,56 +119,19 @@ public class LevelTestManager : MonoBehaviour
 
         if (feedbackLabel != null) {
             feedbackLabel.gameObject.SetActive(false);
-            feedbackLabel.fontSizeMax = 30;
             feedbackLabel.enableAutoSizing = true;
         }
     }
 
-    IEnumerator InitializationSequence()
-    {
-        int level = Global.CurrentLevel;
-        Debug.Log($"LevelTest: Loading level {level}");
-        vocabData = Curriculum.GetLevel(level);
-
-        if (vocabData == null || vocabData.Count == 0) {
-            Debug.LogWarning("LevelTest: Local data empty.");
-        }
-
-        if (vocabData == null || vocabData.Count == 0) {
-            if (wordLabel != null) wordLabel.text = "ERROR: NO DATA";
-        } else {
-            GenerateQuestions();
-        }
-        yield return null;
-    }
-
     void GenerateQuestions()
     {
-        Debug.Log("LevelTest: Generating 20 questions...");
-        questionPool.Clear();
-        
-        var words = vocabData.OrderBy(a => Random.value).ToList();
-        if (words.Count == 0) {
-            Debug.LogError("LevelTest: No words in vocabData!");
-            return;
-        }
-
-        for (int i = 0; i < 20; i++) {
-            var v = words[i % words.Count];
-            string type = (i % 2 == 0) ? "reading" : "meaning";
-            questionPool.Add(new Dictionary<string, object> { { "vocab", v }, { "type", type } });
-        }
-        
-        questionPool = questionPool.OrderBy(a => Random.value).ToList();
         currentQIdx = 0;
         score = 0;
-        Debug.Log($"LevelTest: Pool built with {questionPool.Count} questions.");
         NextQuestion();
     }
 
     void NextQuestion()
     {
-        Debug.Log($"LevelTest: NextQuestion index {currentQIdx}");
         if (currentQIdx >= questionPool.Count) { ShowSummary(); return; }
 
         state = "PLAYING";
@@ -192,42 +143,32 @@ public class LevelTestManager : MonoBehaviour
         if (optionsContainer != null) optionsContainer.gameObject.SetActive(true);
 
         var q = questionPool[currentQIdx];
-        if (!q.ContainsKey("vocab") || q["vocab"] == null) {
-            Debug.LogError("LevelTest: Question vocab is NULL!");
-            currentQIdx++; NextQuestion(); return;
-        }
+        string questionText = q.ContainsKey("questionText") ? q["questionText"].ToString() : "";
+        string correctLetter = q.ContainsKey("correctAnswer") ? q["correctAnswer"].ToString() : "A";
+        string correctAns = q.ContainsKey("answer" + correctLetter) ? q["answer" + correctLetter].ToString() : "";
 
-        CurriculumItem vocab = (CurriculumItem)q["vocab"];
-        string qType = q.ContainsKey("type") ? q["type"].ToString() : "reading";
+        if (wordLabel != null) wordLabel.text = questionText;
+        if (promptLabel != null) promptLabel.text = "Choose the correct answer:";
 
-        string correctAns = "";
         List<string> choices = new List<string>();
+        if (q.ContainsKey("answerA") && !string.IsNullOrEmpty(q["answerA"].ToString())) choices.Add(q["answerA"].ToString());
+        if (q.ContainsKey("answerB") && !string.IsNullOrEmpty(q["answerB"].ToString())) choices.Add(q["answerB"].ToString());
+        if (q.ContainsKey("answerC") && !string.IsNullOrEmpty(q["answerC"].ToString())) choices.Add(q["answerC"].ToString());
+        if (q.ContainsKey("answerD") && !string.IsNullOrEmpty(q["answerD"].ToString())) choices.Add(q["answerD"].ToString());
 
-        if (qType == "reading") {
-            correctAns = string.IsNullOrEmpty(vocab.romaji) ? vocab.meaning : vocab.romaji;
-            if (wordLabel != null) wordLabel.text = vocab.kana; 
-            if (promptLabel != null) promptLabel.text = "Choose the reading:";
-            foreach (var v in vocabData) { 
-                string s = string.IsNullOrEmpty(v.romaji) ? v.meaning : v.romaji; 
-                if (s != correctAns && !choices.Contains(s)) choices.Add(s); 
+        if (choices.Count <= 1) {
+            choices = new List<string> { correctAns };
+            var fakePool = new List<string>();
+            foreach(var other in questionPool) {
+                string otherLetter = other.ContainsKey("correctAnswer") ? other["correctAnswer"].ToString() : "A";
+                string otherAns = other.ContainsKey("answer" + otherLetter) ? other["answer" + otherLetter].ToString() : "";
+                if (otherAns != correctAns) fakePool.Add(otherAns);
             }
-        } else {
-            correctAns = string.IsNullOrEmpty(vocab.meaning) ? vocab.romaji : vocab.meaning;
-            if (wordLabel != null) wordLabel.text = vocab.kana; 
-            if (promptLabel != null) promptLabel.text = "Choose the meaning:";
-            foreach (var v in vocabData) { 
-                string s = string.IsNullOrEmpty(v.meaning) ? v.romaji : v.meaning; 
-                if (s != correctAns && !choices.Contains(s)) choices.Add(s); 
-            }
+            fakePool = fakePool.OrderBy(a => Random.value).ToList();
+            for(int i=0; i < Mathf.Min(3, fakePool.Count); i++) choices.Add(fakePool[i]);
         }
 
-        if (choices.Count < 3) {
-            string[] fillers = { "a", "i", "u", "e", "o", "ka", "ki", "ku", "ke", "ko" };
-            foreach(var f in fillers) if (f != correctAns && !choices.Contains(f) && choices.Count < 3) choices.Add(f);
-        }
-
-        choices = choices.OrderBy(a => Random.value).Take(3).ToList();
-        choices.Add(correctAns);
+        if (!choices.Contains(correctAns)) choices.Add(correctAns);
         choices = choices.OrderBy(a => Random.value).ToList();
 
         currentQ["correct"] = correctAns;
@@ -235,22 +176,15 @@ public class LevelTestManager : MonoBehaviour
 
         if (optionsContainer != null) {
             optionsContainer.gameObject.SetActive(true);
-            Debug.Log("LevelTest: Clearing and building options...");
             foreach (Transform child in optionsContainer) Destroy(child.gameObject);
             
             for (int i = 0; i < choices.Count; i++) {
                 int idx = i;
-                if (optionButtonPrefab == null) {
-                    Debug.LogError("LevelTest: optionButtonPrefab is NULL!");
-                    continue;
-                }
+                if (optionButtonPrefab == null) continue;
                 GameObject btnObj = Instantiate(optionButtonPrefab, optionsContainer);
                 btnObj.SetActive(true);
                 Button btn = btnObj.GetComponent<Button>();
-                if (btn == null) {
-                    Debug.LogError("LevelTest: Button component missing on instantiated option!");
-                    continue;
-                }
+                if (btn == null) continue;
                 
                 var txt = btn.GetComponentInChildren<TextMeshProUGUI>(true);
                 if (txt != null) {
@@ -262,8 +196,6 @@ public class LevelTestManager : MonoBehaviour
                     txt.fontSizeMax = 18;
                     txt.enableWordWrapping = true;
                     txt.alignment = TextAlignmentOptions.Center;
-                    
-                    // Force padding via RectTransform if possible
                     var rt = txt.GetComponent<RectTransform>();
                     if (rt != null) {
                         rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
@@ -342,23 +274,72 @@ public class LevelTestManager : MonoBehaviour
         if (promptLabel != null) promptLabel.gameObject.SetActive(false);
         if (optionsContainer != null) optionsContainer.gameObject.SetActive(false);
         if (progressLabel != null) progressLabel.gameObject.SetActive(false);
+        if (btnBack != null) btnBack.gameObject.SetActive(false);
         
-        bool passed = (score >= passingScore);
+        bool passed = (score >= passingScore && passingScore > 0);
+        int reward = testData.ContainsKey("rewardGcoin") ? System.Convert.ToInt32(testData["rewardGcoin"]) : 0;
+        
         if (feedbackLabel != null) {
-            feedbackLabel.text = passed ? "LEVEL PASSED!" : "LEVEL FAILED";
-            feedbackLabel.text += $"\nYour Score: {score} / {questionPool.Count}";
-            feedbackLabel.color = passed ? Color.green : Color.red;
+            if (passed) {
+                feedbackLabel.text = $"CONGRATULATIONS!\nYou scored a perfect {score}/{questionPool.Count}.\nSubmitting results to server...";
+                feedbackLabel.color = Color.green;
+            } else {
+                feedbackLabel.text = $"TOO BAD...\nYou scored {score}/{questionPool.Count}.\nRecording attempt...";
+                feedbackLabel.color = Color.red;
+            }
             feedbackLabel.gameObject.SetActive(true);
         }
 
-        if (passed) {
-            Global.CurrentLevel++;
+        if (btnSubmit != null) {
+            btnSubmit.gameObject.SetActive(false);
         }
 
-        if (btnSubmit != null) {
-            var t = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
-            if (t != null) t.text = "Main Menu";
-            btnSubmit.interactable = true;
+        StartCoroutine(SubmitScoreCoroutine(passed, reward));
+    }
+
+    IEnumerator SubmitScoreCoroutine(bool passed, int reward)
+    {
+        int userId = Global.UserId;
+        string testCode = testData.ContainsKey("testCode") ? testData["testCode"].ToString() : "";
+        string url = NetworkManager.Instance.BASE_URL + $"/api/player/{userId}/custom-tests/{testCode}/submit";
+        
+        var bodyDict = new Dictionary<string, object> {
+            { "score", score },
+            { "passed", passed }
+        };
+        string bodyJson = JsonConvert.SerializeObject(bodyDict);
+
+        using (UnityWebRequest req = new UnityWebRequest(url, "POST"))
+        {
+            req.SetRequestHeader("Authorization", "Bearer " + NetworkManager.Instance.jwtToken);
+            req.SetRequestHeader("Content-Type", "application/json");
+            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(bodyJson));
+            req.downloadHandler = new DownloadHandlerBuffer();
+            
+            yield return req.SendWebRequest();
+            
+            if (btnSubmit != null) {
+                btnSubmit.gameObject.SetActive(true);
+                var t = btnSubmit.GetComponentInChildren<TextMeshProUGUI>(true);
+                if (t != null) t.text = "Main Menu";
+                btnSubmit.interactable = true;
+            }
+
+            if (req.result == UnityWebRequest.Result.Success) {
+                if (passed && reward > 0) {
+                    feedbackLabel.text = $"CONGRATULATIONS!\nYou scored a perfect {score}/{questionPool.Count}.\nYou received {reward} G-Coins!";
+                    try {
+                        var resData = JsonConvert.DeserializeObject<Dictionary<string, object>>(req.downloadHandler.text);
+                        if (resData != null && resData.ContainsKey("gcoin")) {
+                            Global.Coins = System.Convert.ToInt32(resData["gcoin"]);
+                        }
+                    } catch {}
+                } else if (!passed) {
+                    feedbackLabel.text = $"TOO BAD...\nYou scored {score}/{questionPool.Count}.\nYou need 100% ({passingScore} questions) to get the reward.\nBetter luck next time!";
+                }
+            } else {
+                feedbackLabel.text = $"Error saving results! (Code: {req.responseCode})";
+            }
         }
     }
 }

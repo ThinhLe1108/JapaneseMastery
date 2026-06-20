@@ -15,7 +15,6 @@ public class MainMenuManager : MonoBehaviour
     public TextMeshProUGUI titleLabel;
 
     public Button btnPlacement;
-    public Button btnQuantum;
     public Button btnSolo;
     public Button btnPvP;
     public Button btnShop;
@@ -25,6 +24,13 @@ public class MainMenuManager : MonoBehaviour
     public Button btnEnterTestCode;
     public Button btnDesigner;
     public Button btnLogout;
+
+    [Header("Test Code Modal")]
+    public GameObject enterTestDialog;
+    public TMPro.TMP_InputField testCodeInput;
+    public Button btnSubmitTestCode;
+    public Button btnCloseTestCode;
+    public TextMeshProUGUI testCodeErrorLabel;
 
     private float timeElapsed = 0f;
 
@@ -40,7 +46,6 @@ public class MainMenuManager : MonoBehaviour
         RefreshData();
         
         btnPlacement.onClick.AddListener(() => SceneManager.LoadScene("LevelTest"));
-        btnQuantum.onClick.AddListener(OnQuantumPressed);
         btnSolo.onClick.AddListener(OnSoloPressed);
         btnPvP.onClick.AddListener(OnPvPPressed);
         btnShop.onClick.AddListener(() => SceneManager.LoadScene("Shop"));
@@ -50,6 +55,10 @@ public class MainMenuManager : MonoBehaviour
         btnCreateTest.onClick.AddListener(() => SceneManager.LoadScene("SenseiTestManager"));
         btnEnterTestCode.onClick.AddListener(OnEnterTestCodePressed);
         btnLogout.onClick.AddListener(OnLogoutPressed);
+
+        if (enterTestDialog != null) enterTestDialog.SetActive(false);
+        if (btnSubmitTestCode != null) btnSubmitTestCode.onClick.AddListener(OnSubmitTestCodePressed);
+        if (btnCloseTestCode != null) btnCloseTestCode.onClick.AddListener(() => enterTestDialog.SetActive(false));
 
         ApplyThemeBackground();
     }
@@ -280,7 +289,6 @@ public class MainMenuManager : MonoBehaviour
         btnSolo.gameObject.SetActive(false);
         btnPvP.gameObject.SetActive(false);
         btnShop.gameObject.SetActive(false);
-        btnQuantum.gameObject.SetActive(false);
 
         if (role == "ADMIN")
         {
@@ -306,7 +314,6 @@ public class MainMenuManager : MonoBehaviour
             btnSolo.gameObject.SetActive(true);
             btnPvP.gameObject.SetActive(true);
             btnShop.gameObject.SetActive(true);
-            btnQuantum.gameObject.SetActive(true);
             btnEnterTestCode.gameObject.SetActive(true);
         }
     }
@@ -336,7 +343,76 @@ public class MainMenuManager : MonoBehaviour
 
     private void OnEnterTestCodePressed()
     {
-        // Need to add UI modal logic here
+        if (enterTestDialog != null)
+        {
+            testCodeInput.text = "";
+            if (testCodeErrorLabel != null) testCodeErrorLabel.gameObject.SetActive(false);
+            enterTestDialog.SetActive(true);
+        }
+    }
+
+    private void OnSubmitTestCodePressed()
+    {
+        string code = testCodeInput != null ? testCodeInput.text.Trim() : "";
+        if (string.IsNullOrEmpty(code)) return;
+
+        if (btnSubmitTestCode != null) btnSubmitTestCode.interactable = false;
+        if (testCodeErrorLabel != null)
+        {
+            testCodeErrorLabel.text = "Searching...";
+            testCodeErrorLabel.color = Color.yellow;
+            testCodeErrorLabel.gameObject.SetActive(true);
+        }
+
+        StartCoroutine(FetchTestCodeCoroutine(code));
+    }
+
+    private System.Collections.IEnumerator FetchTestCodeCoroutine(string code)
+    {
+        int userId = Global.UserId;
+        string url = NetworkManager.Instance.BASE_URL + $"/api/player/{userId}/custom-tests/{code}";
+
+        using (UnityEngine.Networking.UnityWebRequest req = UnityEngine.Networking.UnityWebRequest.Get(url))
+        {
+            req.SetRequestHeader("Authorization", "Bearer " + NetworkManager.Instance.jwtToken);
+            yield return req.SendWebRequest();
+
+            if (btnSubmitTestCode != null) btnSubmitTestCode.interactable = true;
+
+            if (req.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    var testData = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(req.downloadHandler.text);
+                    int minLvl = testData.ContainsKey("minLevel") ? System.Convert.ToInt32(testData["minLevel"]) : 1;
+                    if (Global.CurrentLevel < minLvl)
+                    {
+                        if (testCodeErrorLabel != null)
+                        {
+                            testCodeErrorLabel.text = $"Level {minLvl} required!";
+                            testCodeErrorLabel.color = Color.red;
+                        }
+                    }
+                    else
+                    {
+                        Global.CurrentCustomTest = testData;
+                        SceneManager.LoadScene("CustomTestRoom");
+                    }
+                }
+                catch
+                {
+                    if (testCodeErrorLabel != null) { testCodeErrorLabel.text = "Invalid data."; testCodeErrorLabel.color = Color.red; }
+                }
+            }
+            else if (req.responseCode == 400)
+            {
+                if (testCodeErrorLabel != null) { testCodeErrorLabel.text = req.downloadHandler.text; testCodeErrorLabel.color = Color.red; }
+            }
+            else
+            {
+                if (testCodeErrorLabel != null) { testCodeErrorLabel.text = "Test code not found or invalid."; testCodeErrorLabel.color = Color.red; }
+            }
+        }
     }
 
     private void OnLogoutPressed()

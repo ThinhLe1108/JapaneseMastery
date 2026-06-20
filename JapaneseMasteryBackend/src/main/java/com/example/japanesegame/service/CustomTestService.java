@@ -53,7 +53,7 @@ public class CustomTestService {
                 .sensei(sensei)
                 .rewardGcoin(request.getRewardGcoin())
                 .maxAttempts(request.getMaxAttempts())
-                .isApproved(false)
+                .isApproved(true)
                 .build();
 
         final CustomTest savedCustomTest = customTestRepository.save(customTest);
