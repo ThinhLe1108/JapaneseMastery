@@ -353,11 +353,25 @@ func _delete_user(id):
 # ================= QUẢN LÝ TỪ VỰNG =================
 func _fetch_vocabularies_for_level(level: int):
 	status_label.text = "Đang tải danh sách Từ Vựng Level %d..." % level
-	api_request("/player/vocabularies?level=%d" % level, HTTPClient.METHOD_GET, "", _on_vocab_fetched)
+	var Curriculum = preload("res://scripts/Curriculum.gd")
+	var level_data = Curriculum.get_level(level)
+	if level_data.size() > 0:
+		status_label.text = "Tải Từ vựng thành công (Offline)!"
+		var arr = []
+		for v in level_data:
+			var new_v = v.duplicate()
+			new_v["levelRequired"] = level
+			new_v["wordJp"] = v.get("kana", "")
+			arr.append(new_v)
+		all_vocabs = arr
+		current_vocab_page = 0
+		_update_vocab_ui()
+	else:
+		api_request("/player/vocabularies?level=%d" % level, HTTPClient.METHOD_GET, "", _on_vocab_fetched)
 
 func _on_vocab_fetched(code, body):
 	if code == 200:
-		status_label.text = "Tải Từ vựng thành công!"
+		status_label.text = "Tải Từ vựng thành công (Server)!"
 		var json = JSON.new()
 		json.parse(body.get_string_from_utf8())
 		var arr: Array = json.data

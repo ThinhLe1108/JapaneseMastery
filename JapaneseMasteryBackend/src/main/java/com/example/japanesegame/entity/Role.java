@@ -4,6 +4,5 @@ public enum Role {
     ADMIN,
     SENSEI,
     DESIGNER,
-    MODERATOR,
     PLAYER
 }

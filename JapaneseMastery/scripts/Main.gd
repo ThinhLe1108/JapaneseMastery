@@ -16,9 +16,16 @@ var btn_mod: Button
 var btn_create_test: Button
 var btn_enter_test_code: Button
 var btn_designer: Button
+var btn_quantum: Button
 
 var enter_code_dialog: AcceptDialog
 var code_input: LineEdit
+
+var quantum_dialog: ConfirmationDialog
+var quantum_option_btn: OptionButton
+
+var solo_dialog: ConfirmationDialog
+var solo_option_btn: OptionButton
 
 var time_elapsed: float = 0.0
 var floating_kanjis: Array = []
@@ -37,7 +44,7 @@ func _ready():
 func _process(delta):
 	time_elapsed += delta
 	if is_instance_valid(title):
-		title.position.y = 120 + sin(time_elapsed * 1.5) * 10.0
+		title.position.y = 50 + sin(time_elapsed * 1.5) * 10.0
 		
 	for i in range(floating_kanjis.size() - 1, -1, -1):
 		var k = floating_kanjis[i]
@@ -121,7 +128,7 @@ func setup_ui():
 	title.add_theme_font_size_override("font_size", 72)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	title.position.y = 120
+	title.position.y = 50
 	
 	# Title styling
 	title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
@@ -138,54 +145,73 @@ func setup_ui():
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	vbox.position.y = 250
+	vbox.position.y = 300
 	vbox.add_theme_constant_override("separation", 15)
 	add_child(vbox)
 	
-	btn_placement = create_menu_btn("Bài Test Lên Cấp")
+	btn_placement = create_menu_btn("Level-Up Test")
 	btn_placement.pressed.connect(_on_placement_pressed)
 	vbox.add_child(btn_placement)
 	
-	btn_solo = create_menu_btn("Học (Level X)")
+	btn_quantum = create_menu_btn("Quantum Mode")
+	btn_quantum.pressed.connect(_on_quantum_pressed)
+	vbox.add_child(btn_quantum)
+	
+	btn_solo = create_menu_btn("Solo Learning (Level X)")
 	btn_solo.pressed.connect(_on_solo_pressed)
 	vbox.add_child(btn_solo)
 	
-	btn_pvp = create_menu_btn("Đấu trường PvP (Khóa)")
+	btn_pvp = create_menu_btn("PvP Arena (Locked)")
 	btn_pvp.disabled = true
 	vbox.add_child(btn_pvp)
 	
-	btn_shop = create_menu_btn("Cửa hàng (Khóa)")
+	btn_shop = create_menu_btn("Shop (Locked)")
 	btn_shop.disabled = true
 	vbox.add_child(btn_shop)
 	
-	btn_create_test = create_menu_btn("📝 Tạo Bài Test Mới")
+	btn_create_test = create_menu_btn("📝 Create New Test")
 	btn_create_test.pressed.connect(_on_create_test_pressed)
 	btn_create_test.hide()
 	vbox.add_child(btn_create_test)
 	
-	btn_enter_test_code = create_menu_btn("🔑 Nhập Mã Bài Test")
+	btn_enter_test_code = create_menu_btn("🔑 Enter Test Code")
 	btn_enter_test_code.pressed.connect(_on_enter_test_code_pressed)
 	btn_enter_test_code.hide()
 	vbox.add_child(btn_enter_test_code)
 	
-	btn_admin = create_menu_btn("⚙️ Bảng Điều Khiển Admin")
+	btn_admin = create_menu_btn("⚙️ Admin Control Panel")
 	btn_admin.pressed.connect(func(): Global.goto_scene("res://scenes/AdminPanel.tscn"))
 	btn_admin.hide()
 	vbox.add_child(btn_admin)
 	
-	btn_mod = create_menu_btn("🛡️ Bảng Kiểm Duyệt (Moderator)")
+	btn_mod = create_menu_btn("🛡️ Moderation Panel")
 	btn_mod.pressed.connect(func(): Global.goto_scene("res://scenes/ModeratorPanel.tscn"))
 	btn_mod.hide()
 	vbox.add_child(btn_mod)
 	
-	btn_designer = create_menu_btn("🎨 Đăng Bán Shop (Designer)")
+	btn_designer = create_menu_btn("🎨 Designer Shop")
 	btn_designer.pressed.connect(func(): Global.goto_scene("res://scenes/DesignerPanel.tscn"))
 	btn_designer.hide()
 	vbox.add_child(btn_designer)
 	
-	var btn_logout = create_menu_btn("Đăng xuất")
+	var btn_logout = Button.new()
+	btn_logout.text = "Logout"
+	btn_logout.position = Vector2(20, 15)
+	btn_logout.custom_minimum_size = Vector2(120, 40)
+	btn_logout.add_theme_font_size_override("font_size", 20)
+	var style_lo = StyleBoxFlat.new()
+	style_lo.bg_color = Color(0.8, 0.2, 0.2, 0.8)
+	style_lo.corner_radius_top_left = 8
+	style_lo.corner_radius_bottom_right = 8
+	style_lo.corner_radius_top_right = 8
+	style_lo.corner_radius_bottom_left = 8
+	btn_logout.add_theme_stylebox_override("normal", style_lo)
+	var style_lo_h = style_lo.duplicate()
+	style_lo_h.bg_color = Color(1.0, 0.3, 0.3, 1.0)
+	btn_logout.add_theme_stylebox_override("hover", style_lo_h)
+	btn_logout.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	btn_logout.pressed.connect(_on_logout_pressed)
-	vbox.add_child(btn_logout)
+	add_child(btn_logout)
 
 func _create_header_label(font_size: int, font_color: Color) -> Label:
 	var lbl = Label.new()
@@ -248,10 +274,13 @@ func refresh_data():
 	coin_label.text = "G-Coins: " + str(Global.get_coins())
 	
 	btn_placement.disabled = false
-	btn_placement.text = "Bài Test Lên Cấp (Lv %d -> %d)" % [level, level + 1]
+	btn_placement.text = "Level-Up Test (Lv %d -> %d)" % [level, level + 1]
+	var start_level = ((level - 1) / 5) * 5 + 1
+	var max_lvl = start_level + 4
+	btn_quantum.text = "Quantum Test"
 	
 	btn_solo.disabled = false
-	btn_solo.text = "Học (Level %d)" % level
+	btn_solo.text = "Learn (Level %d)" % level
 	
 	var account = Database.get_account()
 	var role = ""
@@ -268,6 +297,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "MODERATOR":
@@ -280,6 +310,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "DESIGNER":
@@ -292,6 +323,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "SENSEI":
@@ -304,6 +336,7 @@ func refresh_data():
 		btn_solo.hide()
 		btn_pvp.hide()
 		btn_shop.hide()
+		btn_quantum.hide()
 		btn_create_test.show()
 		btn_enter_test_code.hide()
 	else: # PLAYER
@@ -316,17 +349,92 @@ func refresh_data():
 		btn_solo.show()
 		btn_pvp.show()
 		btn_shop.show()
+		btn_quantum.show()
 		btn_create_test.hide()
 		btn_enter_test_code.show()
 
 func _on_placement_pressed():
 	Global.goto_scene("res://scenes/LevelTest.tscn")
 
+func _on_quantum_pressed():
+	if quantum_dialog == null:
+		_setup_quantum_dialog()
+	
+	quantum_option_btn.clear()
+	var level = Global.get_current_level()
+	quantum_option_btn.add_item("Quantum Test (Level %d)" % level, 1)
+	quantum_option_btn.add_item("Comprehensive Test (Level 1 - %d)" % level, 2)
+	
+	quantum_dialog.popup_centered()
+
+func _setup_quantum_dialog():
+	quantum_dialog = ConfirmationDialog.new()
+	quantum_dialog.title = "Select Quantum Test Mode"
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	
+	var lbl = Label.new()
+	lbl.text = "Which mode do you want to play?"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(lbl)
+	
+	quantum_option_btn = OptionButton.new()
+	quantum_option_btn.custom_minimum_size = Vector2(300, 40)
+	vbox.add_child(quantum_option_btn)
+	
+	quantum_dialog.add_child(vbox)
+	quantum_dialog.confirmed.connect(_on_quantum_confirmed)
+	add_child(quantum_dialog)
+
+func _on_quantum_confirmed():
+	var selected_id = quantum_option_btn.get_item_id(quantum_option_btn.selected)
+	Global.quantum_mode = selected_id
+	Global.goto_scene("res://scenes/QuantumTest.tscn")
+
 func _on_solo_pressed():
+	if solo_dialog == null:
+		_setup_solo_dialog()
+		
+	solo_option_btn.clear()
+	var level = Global.get_current_level()
+	for i in range(1, level + 1):
+		solo_option_btn.add_item("Level %d" % i, i)
+		
+	# Select the current level by default
+	solo_option_btn.select(level - 1)
+	
+	solo_dialog.popup_centered()
+
+func _setup_solo_dialog():
+	solo_dialog = ConfirmationDialog.new()
+	solo_dialog.title = "Select Level"
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	
+	var lbl = Label.new()
+	lbl.text = "Which level do you want to learn/review?"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(lbl)
+	
+	solo_option_btn = OptionButton.new()
+	solo_option_btn.custom_minimum_size = Vector2(250, 40)
+	vbox.add_child(solo_option_btn)
+	
+	solo_dialog.add_child(vbox)
+	solo_dialog.confirmed.connect(_on_solo_confirmed)
+	add_child(solo_dialog)
+
+func _on_solo_confirmed():
+	var selected_id = solo_option_btn.get_item_id(solo_option_btn.selected)
+	# Normally SoloLearning.gd takes Global.get_current_level(). 
+	# Let's set a temporary variable in Global or just pass it.
+	Global.set("solo_target_level", selected_id)
 	Global.goto_scene("res://scenes/SoloLearning.tscn")
 	
 func _on_create_test_pressed():
-	print("Chuyển đến màn hình Quản lý/Tạo bài Test")
+	print("Switching to Test Manager...")
 	Global.goto_scene("res://scenes/SenseiTestManager.tscn")
 	
 func _on_enter_test_code_pressed():
@@ -337,18 +445,18 @@ func _on_enter_test_code_pressed():
 
 func _setup_code_dialog():
 	enter_code_dialog = AcceptDialog.new()
-	enter_code_dialog.title = "Vào Bài Test"
+	enter_code_dialog.title = "Enter Test"
 	
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
 	
 	var lbl = Label.new()
-	lbl.text = "Vui lòng nhập mã bài Test của Sensei:"
+	lbl.text = "Please enter the Sensei's Test Code:"
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(lbl)
 	
 	code_input = LineEdit.new()
-	code_input.placeholder_text = "Ví dụ: 12345"
+	code_input.placeholder_text = "Example: 12345"
 	code_input.custom_minimum_size = Vector2(250, 40)
 	vbox.add_child(code_input)
 	
@@ -362,9 +470,9 @@ func _on_test_code_confirmed():
 	var code = code_input.text.strip_edges()
 	if code.is_empty():
 		return
-	print("Bắt đầu lấy bài test với mã: ", code)
+	print("Fetching test with code: ", code)
 	
-	btn_enter_test_code.text = "Đang tìm..."
+	btn_enter_test_code.text = "Searching..."
 	btn_enter_test_code.disabled = true
 	
 	var req = HTTPRequest.new()
@@ -377,7 +485,7 @@ func _on_test_code_confirmed():
 
 func _on_test_fetch_completed(res, code, headers, body, req: HTTPRequest):
 	req.queue_free()
-	btn_enter_test_code.text = "🔑 Nhập Mã Bài Test"
+	btn_enter_test_code.text = "🔑 Enter Test Code"
 	btn_enter_test_code.disabled = false
 	
 	if code == 200:
@@ -387,18 +495,18 @@ func _on_test_fetch_completed(res, code, headers, body, req: HTTPRequest):
 			var user_lvl = Global.get_current_level()
 			var min_lvl = test_data.get("minLevel", 1)
 			if user_lvl < min_lvl:
-				OS.alert("Level của bạn (%d) không đủ để làm bài test này (yêu cầu Level %d)." % [user_lvl, min_lvl], "Không đủ điều kiện")
+				OS.alert("Your level (%d) is not high enough for this test (requires Level %d)." % [user_lvl, min_lvl], "Ineligible")
 				return
 			
 			Global.current_custom_test = test_data
 			Global.goto_scene("res://scenes/CustomTestRoom.tscn")
 		else:
-			OS.alert("Dữ liệu bài test không hợp lệ.", "Lỗi")
+			OS.alert("Invalid test data.", "Error")
 	elif code == 400:
 		var error_msg = body.get_string_from_utf8()
-		OS.alert(error_msg, "Không thể vào")
+		OS.alert(error_msg, "Cannot enter")
 	else:
-		OS.alert("Không tìm thấy bài test với mã vừa nhập, hoặc mã không hợp lệ.", "Lỗi (" + str(code) + ")")
+		OS.alert("Test code not found or invalid.", "Error (" + str(code) + ")")
 
 func _on_logout_pressed():
 	Network.logout()
