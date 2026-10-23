@@ -72,7 +72,15 @@ builder.Services.AddControllers()
 
 // Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Japanese Mastery Backend API (.NET 8)",
+        Version = "v1",
+        Description = "ASP.NET Core REST API replacement for Spring Boot backend"
+    });
+});
 
 var app = builder.Build();
 
@@ -84,12 +92,13 @@ using (var scope = app.Services.CreateScope())
     await DatabaseInitializer.InitializeAsync(context, logger);
 }
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Enable Swagger UI
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Japanese Mastery API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors("AllowAll");
 
