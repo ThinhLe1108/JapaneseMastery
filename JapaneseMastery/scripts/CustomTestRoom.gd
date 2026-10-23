@@ -27,7 +27,7 @@ func _ready():
 	
 	setup_ui()
 	if question_pool.is_empty():
-		OS.alert("Bài test này chưa có câu hỏi nào!", "Lỗi")
+		OS.alert("This test has no questions!", "Error")
 		Global.goto_scene("res://scenes/Main.tscn")
 		return
 		
@@ -40,14 +40,14 @@ func setup_ui():
 	add_child(bg)
 	
 	btn_back = Button.new()
-	btn_back.text = "Hủy & Trở về Menu"
+	btn_back.text = "Cancel & Main Menu"
 	btn_back.position = Vector2(20, 20)
 	btn_back.custom_minimum_size = Vector2(200, 40)
 	btn_back.pressed.connect(func(): Global.goto_scene("res://scenes/Main.tscn"))
 	add_child(btn_back)
 	
 	title_label = Label.new()
-	title_label.text = test_data.get("title", "Bài Test")
+	title_label.text = test_data.get("title", "Test")
 	title_label.add_theme_font_size_override("font_size", 30)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
@@ -87,7 +87,7 @@ func setup_ui():
 	add_child(options_container)
 	
 	btn_submit = Button.new()
-	btn_submit.text = "Xác nhận"
+	btn_submit.text = "Confirm"
 	btn_submit.custom_minimum_size = Vector2(200, 60)
 	btn_submit.add_theme_font_size_override("font_size", 24)
 	btn_submit.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -111,11 +111,11 @@ func next_question():
 		return
 		
 	state = "PLAYING"
-	progress_label.text = "Câu %d / %d" % [current_q_idx + 1, question_pool.size()]
+	progress_label.text = "Question %d / %d" % [current_q_idx + 1, question_pool.size()]
 	
 	var q_data = question_pool[current_q_idx]
 	word_label.text = q_data.get("questionText", "")
-	prompt_label.text = "Chọn đáp án đúng:"
+	prompt_label.text = "Choose the correct answer:"
 	
 	var correct_letter = q_data.get("correctAnswer", "A")
 	var correct_ans = q_data.get("answer" + correct_letter, "")
@@ -164,7 +164,7 @@ func next_question():
 	prompt_label.show()
 	options_container.show()
 	
-	btn_submit.text = "Xác nhận"
+	btn_submit.text = "Confirm"
 	btn_submit.disabled = true
 	btn_submit.show()
 	
@@ -189,10 +189,10 @@ func _on_submit_pressed():
 		
 		if is_correct:
 			score += 1
-			feedback_label.text = "Chính xác!"
+			feedback_label.text = "Correct!"
 			feedback_label.modulate = Color(0.4, 1.0, 0.4)
 		else:
-			feedback_label.text = "Sai rồi! Đáp án: " + current_q["correct"]
+			feedback_label.text = "Wrong! Answer: " + current_q["correct"]
 			feedback_label.modulate = Color(1.0, 0.4, 0.4)
 			
 		state = "RESULT"
@@ -200,7 +200,7 @@ func _on_submit_pressed():
 		prompt_label.hide()
 		options_container.hide()
 		
-		btn_submit.text = "Tiếp theo"
+		btn_submit.text = "Next"
 		feedback_label.show()
 		
 	elif state == "RESULT":
@@ -224,10 +224,10 @@ func show_summary():
 	var reward = test_data.get("rewardGcoin", 0)
 	
 	if passed:
-		feedback_label.text = "CHÚC MỪNG!\nBạn đã đạt tuyệt đối %d/%d câu.\nĐang gửi kết quả lên máy chủ..." % [score, question_pool.size()]
+		feedback_label.text = "CONGRATULATIONS!\nYou scored a perfect %d/%d.\nSubmitting results to server..." % [score, question_pool.size()]
 		feedback_label.modulate = Color(0.4, 1.0, 0.4)
 	else:
-		feedback_label.text = "RẤT TIẾC...\nBạn đạt %d/%d câu.\nĐang ghi nhận lượt làm bài..." % [score, question_pool.size()]
+		feedback_label.text = "TOO BAD...\nYou scored %d/%d.\nRecording attempt..." % [score, question_pool.size()]
 		feedback_label.modulate = Color(1.0, 0.4, 0.4)
 		
 	btn_submit.hide()
@@ -240,11 +240,11 @@ func show_summary():
 	req.request_completed.connect(func(res, code, hdrs, body):
 		req.queue_free()
 		btn_submit.show()
-		btn_submit.text = "Về Menu"
+		btn_submit.text = "Main Menu"
 		
 		if code == 200:
 			if passed and reward > 0:
-				feedback_label.text = "CHÚC MỪNG!\nBạn đã đạt tuyệt đối %d/%d câu.\nBạn nhận được %d G-Coins!" % [score, question_pool.size(), reward]
+				feedback_label.text = "CONGRATULATIONS!\nYou scored a perfect %d/%d.\nYou received %d G-Coins!" % [score, question_pool.size(), reward]
 				# Cập nhật số dư locally
 				var json = JSON.new()
 				if json.parse(body.get_string_from_utf8()) == OK:
@@ -254,9 +254,9 @@ func show_summary():
 					# Nhưng để update UI nhanh ta có thể hack nhỏ
 					Global.emit_signal("coins_changed", new_gcoin)
 			elif not passed:
-				feedback_label.text = "RẤT TIẾC...\nBạn đạt %d/%d câu.\nCần đúng 100%% (%d câu) để nhận thưởng.\nHãy cố gắng lần sau!" % [score, question_pool.size(), passing_score]
+				feedback_label.text = "TOO BAD...\nYou scored %d/%d.\nYou need 100%% (%d questions) to get the reward.\nBetter luck next time!" % [score, question_pool.size(), passing_score]
 		else:
-			feedback_label.text = "Có lỗi xảy ra khi lưu kết quả! (Mã lỗi: %d)" % code
+			feedback_label.text = "Error saving results! (Error code: %d)" % code
 	)
 	
 	var body_dict = {

@@ -17,6 +17,9 @@ public class Vocabulary {
     @Column(name = "word_jp", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String wordJp;
 
+    @Column(columnDefinition = "NVARCHAR(255)")
+    private String kana;
+
     @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String romaji;
 

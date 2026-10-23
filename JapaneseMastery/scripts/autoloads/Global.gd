@@ -5,10 +5,46 @@ signal coins_changed(new_amount)
 
 var current_scene = null
 var current_custom_test: Dictionary = {}
+var quantum_start_level = null
+var quantum_mode = 1 # 1: Current Level, 2: Comprehensive Test
+var solo_target_level = null
 
 func _ready():
 	var root = get_tree().root
 	current_scene = root.get_child(root.get_child_count() - 1)
+	check_ota_updates()
+
+func check_ota_updates():
+	var req = HTTPRequest.new()
+	add_child(req)
+	
+	var dir = DirAccess.open("user://")
+	if not dir.dir_exists("data"):
+		dir.make_dir("data")
+		
+	var temp_path = "user://data/jmdict_levels_temp.json"
+	req.download_file = temp_path
+	
+	# ĐÂY LÀ ĐƯỜNG DẪN BẠN SẼ HOST FILE JSON CẬP NHẬT (Thay đổi sau)
+	var url = "https://your-server-or-github-pages.com/jmdict_levels.json" 
+	
+	req.request_completed.connect(func(res, code, headers, body):
+		if code == 200:
+			var da = DirAccess.open("user://data")
+			if da.file_exists("jmdict_levels.json"):
+				da.remove("jmdict_levels.json")
+			da.rename("jmdict_levels_temp.json", "jmdict_levels.json")
+			
+			var Curriculum = preload("res://scripts/Curriculum.gd")
+			Curriculum.is_json_loaded = false
+			print("OTA Update: Đã tải từ điển mới thành công!")
+		else:
+			var da = DirAccess.open("user://data")
+			if da.file_exists("jmdict_levels_temp.json"):
+				da.remove("jmdict_levels_temp.json")
+		req.queue_free()
+	)
+	req.request(url)
 
 func get_display_name() -> String:
 	return Database.get_account()["display_name"]

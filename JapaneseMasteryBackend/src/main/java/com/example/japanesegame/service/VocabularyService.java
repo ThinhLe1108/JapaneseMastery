@@ -18,7 +18,7 @@ public class VocabularyService {
     private final JMdictService jmdictService;
 
     public List<Vocabulary> getAllVocabularies() {
-        return vocabularyRepository.findAll();
+        return jmdictService.getAllVocabularies();
     }
 
     public Vocabulary getVocabularyById(Long id) {
@@ -34,26 +34,53 @@ public class VocabularyService {
 
 
     public List<Vocabulary> getVocabulariesForLevel(int level, java.util.Set<String> learnedWords) {
-        // Luôn ưu tiên lấy từ Database trước. Nếu Database đã có, trả về ngay.
-        List<Vocabulary> dbVocabs = vocabularyRepository.findByLevelRequired(level);
-        if (dbVocabs != null && !dbVocabs.isEmpty()) {
-            return dbVocabs;
-        }
+        List<Vocabulary> baseList = jmdictService.getVocabulariesForLevel(level);
+        List<Vocabulary> expandedList = new ArrayList<>();
 
-        // Nếu Database chưa có (Level mới), tự động sinh từ kanjidic2.xml và lưu vào DB
-        return fetchVocabulariesFromKanjidicAndSave(level);
-    }
+        for (Vocabulary v : baseList) {
+            String wordJp = (v.getWordJp() != null && !v.getWordJp().isEmpty()) ? v.getWordJp() : v.getKana();
+            String kana = (v.getKana() != null && !v.getKana().isEmpty()) ? v.getKana() : v.getWordJp();
 
-    private List<Vocabulary> fetchVocabulariesFromKanjidicAndSave(int level) {
-        List<Vocabulary> fetched = jmdictService.getVocabulariesForLevel(level);
-        List<Vocabulary> saved = new ArrayList<>();
-        
-        for (Vocabulary vocab : fetched) {
-            if (!vocabularyRepository.existsByWordJp(vocab.getWordJp())) {
-                saved.add(vocabularyRepository.save(vocab));
+            if (hasKanji(wordJp)) {
+                // Add Kanji version
+                expandedList.add(Vocabulary.builder()
+                        .wordJp(wordJp)
+                        .kana(kana)
+                        .romaji(v.getRomaji())
+                        .meaning(v.getMeaning())
+                        .type(v.getType())
+                        .levelRequired(v.getLevelRequired())
+                        .build());
+                // Add Kana version
+                expandedList.add(Vocabulary.builder()
+                        .wordJp(kana)
+                        .kana(kana)
+                        .romaji(v.getRomaji())
+                        .meaning(v.getMeaning())
+                        .type(v.getType())
+                        .levelRequired(v.getLevelRequired())
+                        .build());
+            } else {
+                // Just add as is (Hiragana/Katakana)
+                expandedList.add(Vocabulary.builder()
+                        .wordJp(wordJp)
+                        .kana(kana)
+                        .romaji(v.getRomaji())
+                        .meaning(v.getMeaning())
+                        .type(v.getType())
+                        .levelRequired(v.getLevelRequired())
+                        .build());
             }
         }
-        
-        return saved;
+        return expandedList;
     }
+
+    private boolean hasKanji(String s) {
+        if (s == null) return false;
+        for (char c : s.toCharArray()) {
+            if (c >= '\u4e00' && c <= '\u9faf') return true;
+        }
+        return false;
+    }
+
 }

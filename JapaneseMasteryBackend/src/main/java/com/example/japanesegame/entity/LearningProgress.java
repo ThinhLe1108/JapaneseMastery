@@ -20,9 +20,8 @@ public class LearningProgress {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vocabulary_id", nullable = false)
-    private Vocabulary vocabulary;
+    @Column(name = "word_jp", nullable = false, columnDefinition = "NVARCHAR(255)")
+    private String wordJp;
 
     @Column(name = "is_memorized", nullable = false)
     @Builder.Default

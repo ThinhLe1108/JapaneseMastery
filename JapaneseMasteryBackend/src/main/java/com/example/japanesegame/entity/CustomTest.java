@@ -36,5 +36,5 @@ public class CustomTest {
 
     @Column(name = "is_approved", nullable = false)
     @Builder.Default
-    private Boolean isApproved = false;
+    private Boolean isApproved = true;
 }

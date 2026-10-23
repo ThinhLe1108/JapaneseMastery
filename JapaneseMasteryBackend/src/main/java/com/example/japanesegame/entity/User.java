@@ -40,9 +40,29 @@ public class User {
     @Column(name = "access_token", length = 500)
     private String accessToken;
 
+    @Column(name = "pvp_ban_until")
+    private java.time.LocalDateTime pvpBanUntil;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_learned_words", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "word_jp", columnDefinition = "NVARCHAR(255)")
     @Builder.Default
     private Set<String> learnedWords = new HashSet<>();
+
+    // -- Shop & Customization --
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "user_purchased_items",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "item_id"))
+    @Builder.Default
+    private Set<ShopItem> purchasedItems = new HashSet<>();
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "active_theme_id")
+    private ShopItem activeTheme;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "active_background_id")
+    private ShopItem activeBackground;
 }
