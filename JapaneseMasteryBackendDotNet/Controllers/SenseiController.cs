@@ -1,10 +1,12 @@
 using JapaneseMasteryBackendDotNet.Data;
 using JapaneseMasteryBackendDotNet.DTOs;
 using JapaneseMasteryBackendDotNet.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JapaneseMasteryBackendDotNet.Controllers;
 
+[Authorize(Roles = "SENSEI,ADMIN")]
 [ApiController]
 [Route("api/sensei")]
 public class SenseiController : ControllerBase
@@ -18,8 +20,9 @@ public class SenseiController : ControllerBase
         _context = context;
     }
 
-    private async Task<bool> ValidateTokenAsync(long senseiId, string? authHeader)
+    private async Task<bool> ValidateTokenAsync(long senseiId)
     {
+        var authHeader = Request.Headers.Authorization.FirstOrDefault();
         if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             return true; // Optional check
@@ -35,10 +38,9 @@ public class SenseiController : ControllerBase
     [HttpPost("{senseiId}/custom-tests")]
     public async Task<IActionResult> CreateCustomTest(
         [FromRoute] long senseiId,
-        [FromBody] CustomTestRequest request,
-        [FromHeader(Name = "Authorization")] string? authHeader)
+        [FromBody] CustomTestRequest request)
     {
-        if (!await ValidateTokenAsync(senseiId, authHeader))
+        if (!await ValidateTokenAsync(senseiId))
         {
             return Unauthorized();
         }
@@ -56,10 +58,9 @@ public class SenseiController : ControllerBase
 
     [HttpGet("{senseiId}/custom-tests")]
     public async Task<IActionResult> GetCustomTests(
-        [FromRoute] long senseiId,
-        [FromHeader(Name = "Authorization")] string? authHeader)
+        [FromRoute] long senseiId)
     {
-        if (!await ValidateTokenAsync(senseiId, authHeader))
+        if (!await ValidateTokenAsync(senseiId))
         {
             return Unauthorized();
         }
@@ -78,10 +79,9 @@ public class SenseiController : ControllerBase
     [HttpGet("{senseiId}/tests/{testId}/attempts")]
     public async Task<IActionResult> GetTestAttempts(
         [FromRoute] long senseiId,
-        [FromRoute] long testId,
-        [FromHeader(Name = "Authorization")] string? authHeader)
+        [FromRoute] long testId)
     {
-        if (!await ValidateTokenAsync(senseiId, authHeader))
+        if (!await ValidateTokenAsync(senseiId))
         {
             return Unauthorized();
         }
@@ -101,10 +101,9 @@ public class SenseiController : ControllerBase
     public async Task<IActionResult> UpdateCustomTest(
         [FromRoute] long senseiId,
         [FromRoute] long testId,
-        [FromBody] CustomTestRequest request,
-        [FromHeader(Name = "Authorization")] string? authHeader)
+        [FromBody] CustomTestRequest request)
     {
-        if (!await ValidateTokenAsync(senseiId, authHeader))
+        if (!await ValidateTokenAsync(senseiId))
         {
             return Unauthorized();
         }
@@ -123,10 +122,9 @@ public class SenseiController : ControllerBase
     [HttpDelete("{senseiId}/custom-tests/{testId}")]
     public async Task<IActionResult> DeleteCustomTest(
         [FromRoute] long senseiId,
-        [FromRoute] long testId,
-        [FromHeader(Name = "Authorization")] string? authHeader)
+        [FromRoute] long testId)
     {
-        if (!await ValidateTokenAsync(senseiId, authHeader))
+        if (!await ValidateTokenAsync(senseiId))
         {
             return Unauthorized();
         }

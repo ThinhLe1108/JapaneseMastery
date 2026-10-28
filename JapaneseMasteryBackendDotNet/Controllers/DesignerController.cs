@@ -2,10 +2,12 @@ using JapaneseMasteryBackendDotNet.Data;
 using JapaneseMasteryBackendDotNet.DTOs;
 using JapaneseMasteryBackendDotNet.Models;
 using JapaneseMasteryBackendDotNet.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JapaneseMasteryBackendDotNet.Controllers;
 
+[Authorize(Roles = "DESIGNER,ADMIN")]
 [ApiController]
 [Route("api/designer/{designerId}/items")]
 public class DesignerController : ControllerBase

@@ -36,7 +36,7 @@ public class AuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var token = _jwtService.GenerateToken(user.Username);
+        var token = _jwtService.GenerateToken(user);
         user.AccessToken = token;
         await _context.SaveChangesAsync();
 
@@ -78,7 +78,7 @@ public class AuthService
             }
         }
 
-        var token = _jwtService.GenerateToken(user.Username);
+        var token = _jwtService.GenerateToken(user);
         user.AccessToken = token;
         await _context.SaveChangesAsync();
 
