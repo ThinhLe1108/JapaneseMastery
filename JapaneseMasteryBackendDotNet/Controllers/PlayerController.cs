@@ -26,8 +26,9 @@ public class PlayerController : ControllerBase
     }
 
     [HttpGet("{id}/heartbeat")]
-    public async Task<IActionResult> Heartbeat([FromRoute] long id, [FromHeader(Name = "Authorization")] string? authHeader)
+    public async Task<IActionResult> Heartbeat([FromRoute] long id)
     {
+        var authHeader = Request.Headers.Authorization.FirstOrDefault();
         var user = await _context.Users.FindAsync(id);
         if (user == null) return NotFound("User not found");
 
@@ -47,9 +48,9 @@ public class PlayerController : ControllerBase
     public async Task<IActionResult> UpdateProgress(
         [FromRoute] long id,
         [FromQuery] int level,
-        [FromHeader(Name = "Authorization")] string? authHeader,
         [FromBody] List<string>? newLearnedWords = null)
     {
+        var authHeader = Request.Headers.Authorization.FirstOrDefault();
         var user = await _context.Users
             .Include(u => u.UserLearnedWords)
             .FirstOrDefaultAsync(u => u.Id == id);
@@ -110,9 +111,9 @@ public class PlayerController : ControllerBase
     [HttpPut("{id}/coins")]
     public async Task<IActionResult> UpdateCoins(
         [FromRoute] long id,
-        [FromQuery] int coins,
-        [FromHeader(Name = "Authorization")] string? authHeader)
+        [FromQuery] int coins)
     {
+        var authHeader = Request.Headers.Authorization.FirstOrDefault();
         var user = await _context.Users
             .Include(u => u.UserLearnedWords)
             .FirstOrDefaultAsync(u => u.Id == id);
@@ -136,9 +137,9 @@ public class PlayerController : ControllerBase
     [HttpGet("{id}/custom-tests/{testCode}")]
     public async Task<IActionResult> GetCustomTest(
         [FromRoute] long id,
-        [FromRoute] string testCode,
-        [FromHeader(Name = "Authorization")] string? authHeader)
+        [FromRoute] string testCode)
     {
+        var authHeader = Request.Headers.Authorization.FirstOrDefault();
         try
         {
             var response = await _customTestService.GetCustomTestForPlayerAsync(id, testCode);

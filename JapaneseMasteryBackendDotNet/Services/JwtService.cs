@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using JapaneseMasteryBackendDotNet.Models;
 using Microsoft.IdentityModel.Tokens;
 
 namespace JapaneseMasteryBackendDotNet.Services;
@@ -21,13 +22,39 @@ public class JwtService
         return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
     }
 
-    public string GenerateToken(string username)
+    public string GenerateToken(User user)
+    {
+        return GenerateToken(user.Username, user.Role.ToString(), user.Id);
+    }
+
+    public string GenerateToken(string username, string role = "PLAYER", long userId = 0)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = GetSigningKey();
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId > 0 ? userId.ToString() : username),
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.Role, role),
+            new Claim("userId", userId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, username),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId > 0 ? userId.ToString() : username),
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.Role, role),
+            new Claim("role", role),
+            new Claim("userId", userId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, username),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, username), new Claim(JwtRegisteredClaimNames.Sub, username) }),
+            Subject = new ClaimsIdentity(claims),
             IssuedAt = DateTime.UtcNow,
             Expires = DateTime.UtcNow.AddMilliseconds(_expirationMs),
             SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature)
@@ -62,4 +89,3 @@ public class JwtService
         }
     }
 }
-

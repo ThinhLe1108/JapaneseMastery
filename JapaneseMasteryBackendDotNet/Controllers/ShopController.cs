@@ -1,5 +1,7 @@
+using JapaneseMasteryBackendDotNet.DTOs;
 using JapaneseMasteryBackendDotNet.Models;
 using JapaneseMasteryBackendDotNet.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JapaneseMasteryBackendDotNet.Controllers;
@@ -15,17 +17,19 @@ public class ShopController : ControllerBase
         _shopService = shopService;
     }
 
+    [Authorize(Roles = "DESIGNER,ADMIN")]
     [HttpPost("items")]
-    public async Task<IActionResult> UploadItem(
-        [FromForm] string name,
-        [FromForm] ShopItemType type,
-        [FromForm] int price,
-        [FromForm] long designerId,
-        [FromForm] IFormFile file)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadItem([FromForm] UploadItemRequest request)
     {
         try
         {
-            var item = await _shopService.UploadItemToShopAsync(name, type, price, designerId, file);
+            var item = await _shopService.UploadItemToShopAsync(
+                request.Name,
+                request.Type,
+                request.Price,
+                request.DesignerId,
+                request.File);
             return Ok(item);
         }
         catch (Exception ex)

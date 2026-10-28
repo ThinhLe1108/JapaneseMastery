@@ -1,8 +1,10 @@
 using JapaneseMasteryBackendDotNet.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JapaneseMasteryBackendDotNet.Controllers;
 
+[Authorize(Roles = "ADMIN")]
 [ApiController]
 [Route("api/admin/vocabularies")]
 public class AdminVocabController : ControllerBase
