@@ -354,6 +354,36 @@ public class SoloLearningManager : MonoBehaviour
             var t = btnNext.GetComponentInChildren<TextMeshProUGUI>();
             if (t != null) t.text = "Main Menu";
         }
+
+        // Sync learned words to server so player's learned vocabularies are stored in database
+        if (Global.UserId != -1 && NetworkManager.Instance != null && !string.IsNullOrEmpty(NetworkManager.Instance.jwtToken))
+        {
+            var learnedWordsList = new List<string>();
+            foreach (var item in vocabData)
+            {
+                var w = !string.IsNullOrEmpty(item.wordJp) ? item.wordJp : item.kana;
+                if (!string.IsNullOrEmpty(w) && !learnedWordsList.Contains(w))
+                    learnedWordsList.Add(w);
+            }
+            if (learnedWordsList.Count > 0)
+            {
+                StartCoroutine(SyncLearnedWordsCoroutine(learnedWordsList));
+            }
+        }
+    }
+
+    private IEnumerator SyncLearnedWordsCoroutine(List<string> words)
+    {
+        string url = NetworkManager.Instance.BASE_URL + $"/api/player/{Global.UserId}/progress?level={Global.CurrentLevel}";
+        using (UnityWebRequest req = new UnityWebRequest(url, "PUT"))
+        {
+            req.SetRequestHeader("Authorization", "Bearer " + NetworkManager.Instance.jwtToken);
+            req.SetRequestHeader("Content-Type", "application/json");
+            string json = JsonConvert.SerializeObject(words);
+            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
+            req.downloadHandler = new DownloadHandlerBuffer();
+            yield return req.SendWebRequest();
+        }
     }
 
     void SkipVocab()

@@ -27,11 +27,13 @@ var btn_user_prev: Button
 var btn_user_next: Button
 
 var all_vocabs = []
+var filtered_vocabs = []
 var current_vocab_page = 0
 var vocab_search_input: LineEdit
 var lbl_vocab_page: Label
 var btn_vocab_prev: Button
 var btn_vocab_next: Button
+var vocab_search_timer: Timer
 
 
 
@@ -152,13 +154,27 @@ func _setup_ui():
 	vocab_top_bar.add_child(vocab_level_input)
 	
 	var btn_fetch_vocab = Button.new()
-	btn_fetch_vocab.text = "Xem Từ Vựng Của Level Này"
+	btn_fetch_vocab.text = "Xem Từ Vựng Level"
 	btn_fetch_vocab.pressed.connect(func():
 		var lvl = int(vocab_level_input.text)
 		if lvl <= 0: lvl = 1
 		_fetch_vocabularies_for_level(lvl)
 	)
 	vocab_top_bar.add_child(btn_fetch_vocab)
+	
+	var btn_all_vocab = Button.new()
+	btn_all_vocab.text = "Tải Toàn Bộ Từ Vựng (JMdict)"
+	btn_all_vocab.pressed.connect(func():
+		status_label.text = "Đang tải danh sách từ vựng JMdict..."
+		api_request("/admin/vocabularies", HTTPClient.METHOD_GET, "", _on_vocab_fetched)
+	)
+	vocab_top_bar.add_child(btn_all_vocab)
+	
+	vocab_search_timer = Timer.new()
+	vocab_search_timer.one_shot = true
+	vocab_search_timer.wait_time = 0.4
+	vocab_search_timer.timeout.connect(_on_search_timer_timeout)
+	add_child(vocab_search_timer)
 	
 	var vocab_filter = HBoxContainer.new()
 	vocab_search_input = LineEdit.new()
@@ -206,6 +222,8 @@ func _show_vocab_tab():
 	btn_tab_vocab.modulate = Color(0.4, 1.0, 0.4)
 	btn_tab_users.modulate = Color(1.0, 1.0, 1.0)
 	status_label.text = ""
+	if all_vocabs.is_empty():
+		_fetch_vocabularies_for_level(1)
 
 func _on_user_search_changed(t: String):
 	current_user_page = 0
@@ -216,8 +234,38 @@ func _change_user_page(dir: int):
 	_update_users_ui()
 	
 func _on_vocab_search_changed(t: String):
-	current_vocab_page = 0
-	_update_vocab_ui()
+	var q = t.strip_edges()
+	if q.is_empty():
+		if is_instance_valid(vocab_search_timer):
+			vocab_search_timer.stop()
+		filtered_vocabs = all_vocabs
+		current_vocab_page = 0
+		_update_vocab_ui()
+		return
+	if is_instance_valid(vocab_search_timer):
+		vocab_search_timer.start(0.4)
+
+func _on_search_timer_timeout():
+	var q = vocab_search_input.text.strip_edges()
+	if q.is_empty():
+		filtered_vocabs = all_vocabs
+		current_vocab_page = 0
+		_update_vocab_ui()
+		return
+		
+	status_label.text = "Đang tìm kiếm '%s' trên server..." % q
+	api_request("/admin/vocabularies?q=" + q.uri_encode(), HTTPClient.METHOD_GET, "", func(code, body):
+		if code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK:
+				var arr: Array = json.data
+				filtered_vocabs = arr
+				current_vocab_page = 0
+				_update_vocab_ui()
+				status_label.text = "Tìm thấy %d từ vựng!" % filtered_vocabs.size()
+		else:
+			status_label.text = "Lỗi tìm kiếm: " + str(code)
+	)
 
 func _change_vocab_page(dir: int):
 	current_vocab_page += dir
@@ -297,7 +345,6 @@ func _update_users_ui():
 		var role_opt = OptionButton.new()
 		role_opt.add_item("PLAYER")
 		role_opt.add_item("SENSEI")
-		role_opt.add_item("MODERATOR")
 		role_opt.add_item("DESIGNER")
 		role_opt.add_item("ADMIN")
 		# Set current role
@@ -353,32 +400,42 @@ func _delete_user(id):
 # ================= QUẢN LÝ TỪ VỰNG =================
 func _fetch_vocabularies_for_level(level: int):
 	status_label.text = "Đang tải danh sách Từ Vựng Level %d..." % level
-	var Curriculum = preload("res://scripts/Curriculum.gd")
-	var level_data = Curriculum.get_level(level)
-	if level_data.size() > 0:
-		status_label.text = "Tải Từ vựng thành công (Offline)!"
-		var arr = []
-		for v in level_data:
-			var new_v = v.duplicate()
-			new_v["levelRequired"] = level
-			new_v["wordJp"] = v.get("kana", "")
-			arr.append(new_v)
-		all_vocabs = arr
-		current_vocab_page = 0
-		_update_vocab_ui()
-	else:
-		api_request("/player/vocabularies?level=%d" % level, HTTPClient.METHOD_GET, "", _on_vocab_fetched)
+	api_request("/admin/vocabularies?level=%d" % level, HTTPClient.METHOD_GET, "", func(code, body):
+		if code == 200:
+			_on_vocab_fetched(code, body)
+		else:
+			var Curriculum = preload("res://scripts/Curriculum.gd")
+			var level_data = Curriculum.get_level(level)
+			if level_data.size() > 0:
+				status_label.text = "Tải Từ vựng Level %d thành công (Offline)!" % level
+				var arr = []
+				for v in level_data:
+					var new_v = v.duplicate()
+					new_v["levelRequired"] = level
+					if not new_v.has("wordJp"):
+						new_v["wordJp"] = v.get("kana", "")
+					arr.append(new_v)
+				all_vocabs = arr
+				filtered_vocabs = all_vocabs
+				current_vocab_page = 0
+				_update_vocab_ui()
+			else:
+				status_label.text = "Lỗi tải Từ vựng: " + str(code)
+	)
 
 func _on_vocab_fetched(code, body):
 	if code == 200:
 		status_label.text = "Tải Từ vựng thành công (Server)!"
 		var json = JSON.new()
-		json.parse(body.get_string_from_utf8())
-		var arr: Array = json.data
-		arr.sort_custom(_sort_by_id_desc)
-		all_vocabs = arr
-		current_vocab_page = 0
-		_update_vocab_ui()
+		if json.parse(body.get_string_from_utf8()) == OK:
+			var arr: Array = json.data
+			arr.sort_custom(_sort_by_id_desc)
+			all_vocabs = arr
+			filtered_vocabs = all_vocabs
+			current_vocab_page = 0
+			if is_instance_valid(vocab_search_input):
+				vocab_search_input.text = ""
+			_update_vocab_ui()
 	else:
 		status_label.text = "Lỗi tải Từ vựng: " + str(code)
 
@@ -386,19 +443,7 @@ func _update_vocab_ui():
 	for c in vocab_container.get_children():
 		c.queue_free()
 		
-	var filtered = []
-	var q = vocab_search_input.text.strip_edges().to_lower()
-	if q.is_empty():
-		filtered = all_vocabs
-	else:
-		for v in all_vocabs:
-			var w = v.get("wordJp", "").to_lower()
-			var r = v.get("romaji", "").to_lower()
-			var m = v.get("meaning", "").to_lower()
-			if q in w or q in r or q in m:
-				filtered.append(v)
-				
-	var total_pages = ceili(float(filtered.size()) / items_per_page)
+	var total_pages = ceili(float(filtered_vocabs.size()) / items_per_page)
 	if total_pages == 0: total_pages = 1
 	if current_vocab_page >= total_pages: current_vocab_page = total_pages - 1
 	if current_vocab_page < 0: current_vocab_page = 0
@@ -408,22 +453,35 @@ func _update_vocab_ui():
 	btn_vocab_next.disabled = (current_vocab_page >= total_pages - 1)
 	
 	var start_idx = current_vocab_page * items_per_page
-	var end_idx = min(start_idx + items_per_page, filtered.size())
+	var end_idx = min(start_idx + items_per_page, filtered_vocabs.size())
 	
 	for i in range(start_idx, end_idx):
-		var v = filtered[i]
+		var v = filtered_vocabs[i]
 		var row = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
 		
-		var lvl_req = v.get("levelRequired", v.get("level", 1)) # Sometimes JSON might have different keys
+		var lvl_req = v.get("levelRequired", v.get("level", 1))
+		var w_jp = str(v.get("wordJp", "")).strip_edges()
+		var kana = str(v.get("kana", "")).strip_edges()
+		var rom = str(v.get("romaji", "")).strip_edges()
+		var m = str(v.get("meaning", "")).strip_edges()
+		
+		var display_jp = ""
+		if not w_jp.is_empty() and w_jp != kana:
+			display_jp = "%s (%s)" % [w_jp, kana]
+		elif not kana.is_empty():
+			display_jp = "%s (%s)" % [kana, rom] if not rom.is_empty() else kana
+		else:
+			display_jp = rom
+			
 		var lbl = Label.new()
-		lbl.text = "[Lv%s] %s (%s) - %s" % [str(lvl_req), v.get("wordJp", v.get("kana", "")), v.get("romaji", ""), v.get("meaning", "")]
-		lbl.custom_minimum_size = Vector2(400, 0)
+		lbl.text = "[Lv%s] %s - %s" % [str(lvl_req), display_jp, m]
+		lbl.custom_minimum_size = Vector2(480, 0)
 		lbl.clip_text = true
 		row.add_child(lbl)
 		
-		# Chỉ cho phép đổi level nếu từ vựng có ID (tức là được lưu trong Database, Level <= 24)
-		if v.has("id") and v["id"] != null:
+		# Chỉ cho phép đổi level nếu từ vựng có ID (tức là được lưu trong Database)
+		if v.has("id") and v["id"] != null and int(v["id"]) > 0:
 			var lvl_edit = LineEdit.new()
 			lvl_edit.text = str(lvl_req)
 			lvl_edit.custom_minimum_size = Vector2(80, 0)
@@ -435,7 +493,7 @@ func _update_vocab_ui():
 			row.add_child(btn_edit)
 		else:
 			var lbl_dynamic = Label.new()
-			lbl_dynamic.text = "(Từ vựng API - Không thể đổi Level)"
+			lbl_dynamic.text = "(JMdict - Không thể đổi Level)"
 			lbl_dynamic.modulate = Color(0.6, 0.6, 0.6)
 			row.add_child(lbl_dynamic)
 		

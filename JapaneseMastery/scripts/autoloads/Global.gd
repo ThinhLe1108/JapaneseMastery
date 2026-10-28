@@ -5,9 +5,11 @@ signal coins_changed(new_amount)
 
 var current_scene = null
 var current_custom_test: Dictionary = {}
-var quantum_start_level = null
-var quantum_mode = 1 # 1: Current Level, 2: Comprehensive Test
 var solo_target_level = null
+
+# Global caches for instant load times
+var kanjivg_data: Dictionary = {}
+var stroke_cache: Dictionary = {}
 
 func _ready():
 	var root = get_tree().root
@@ -15,6 +17,11 @@ func _ready():
 	check_ota_updates()
 
 func check_ota_updates():
+	# Skip dummy placeholder URL to avoid DNS resolution hangs on startup
+	var url = ""
+	if url.is_empty() or "your-server-or-github-pages.com" in url:
+		return
+		
 	var req = HTTPRequest.new()
 	add_child(req)
 	
@@ -23,10 +30,7 @@ func check_ota_updates():
 		dir.make_dir("data")
 		
 	var temp_path = "user://data/jmdict_levels_temp.json"
-	req.download_file = temp_path
-	
-	# ĐÂY LÀ ĐƯỜNG DẪN BẠN SẼ HOST FILE JSON CẬP NHẬT (Thay đổi sau)
-	var url = "https://your-server-or-github-pages.com/jmdict_levels.json" 
+	req.download_file = temp_path 
 	
 	req.request_completed.connect(func(res, code, headers, body):
 		if code == 200:

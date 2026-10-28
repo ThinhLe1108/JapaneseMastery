@@ -140,18 +140,78 @@ public class LevelTestManager : MonoBehaviour
     {
         int level = Global.CurrentLevel;
         Debug.Log($"LevelTest: Loading level {level}");
-        vocabData = Curriculum.GetLevel(level);
+        vocabData = new List<CurriculumItem>();
 
-        if (vocabData == null || vocabData.Count == 0) {
-            Debug.LogWarning("LevelTest: Local data empty.");
+        // 1. Fetch server vocabularies for this level if network is available
+        if (NetworkManager.Instance != null && !string.IsNullOrEmpty(NetworkManager.Instance.BASE_URL))
+        {
+            string url = NetworkManager.Instance.BASE_URL + $"/api/player/vocabularies?level={level}";
+            if (Global.UserId != -1) url += $"&userId={Global.UserId}";
+
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
+            {
+                if (!string.IsNullOrEmpty(NetworkManager.Instance.jwtToken))
+                    webRequest.SetRequestHeader("Authorization", "Bearer " + NetworkManager.Instance.jwtToken);
+
+                yield return webRequest.SendWebRequest();
+
+                if (webRequest.result == UnityWebRequest.Result.Success)
+                {
+                    var list = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(webRequest.downloadHandler.text);
+                    if (list != null && list.Count > 0)
+                    {
+                        Debug.Log("LevelTest: Loaded " + list.Count + " words from server.");
+                        foreach (var item in list)
+                        {
+                            vocabData.Add(new CurriculumItem {
+                                wordJp = item.ContainsKey("wordJp") ? item["wordJp"]?.ToString() : "",
+                                kana = item.ContainsKey("kana") ? item["kana"]?.ToString() : "",
+                                romaji = item.ContainsKey("romaji") ? item["romaji"]?.ToString() : "",
+                                meaning = item.ContainsKey("meaning") ? item["meaning"]?.ToString() : ""
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("LevelTest: Failed to fetch from server: " + webRequest.error);
+                }
+            }
         }
 
-        if (vocabData == null || vocabData.Count == 0) {
+        // 2. Fallback to local curriculum if offline or level 1-24
+        if (vocabData.Count == 0)
+        {
+            var localList = Curriculum.GetLevel(level);
+            if (localList != null && localList.Count > 0)
+            {
+                vocabData.AddRange(localList);
+            }
+        }
+
+        // 3. Normalize: ensure wordJp and kana are never null
+        foreach (var item in vocabData)
+        {
+            if (string.IsNullOrEmpty(item.wordJp)) item.wordJp = item.kana;
+            if (string.IsNullOrEmpty(item.kana)) item.kana = item.wordJp;
+        }
+
+        if (vocabData.Count == 0) {
+            Debug.LogError("LevelTest: No vocab data available for level " + level);
             if (wordLabel != null) wordLabel.text = "ERROR: NO DATA";
         } else {
+            Debug.Log($"LevelTest: Using {vocabData.Count} vocab items for level {level}");
             GenerateQuestions();
         }
-        yield return null;
+    }
+
+    private bool HasKanji(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return false;
+        foreach (char c in s) {
+            if (c >= '\u4e00' && c <= '\u9faf') return true;
+        }
+        return false;
     }
 
     void GenerateQuestions()
@@ -159,7 +219,13 @@ public class LevelTestManager : MonoBehaviour
         Debug.Log("LevelTest: Generating 20 questions...");
         questionPool.Clear();
         
-        var words = vocabData.OrderBy(a => Random.value).ToList();
+        // Prioritize distinct words (prefer Kanji versions when available)
+        var kanjiWords = vocabData.Where(v => HasKanji(v.wordJp)).ToList();
+        var nonKanjiWords = vocabData.Where(v => !HasKanji(v.wordJp) && !kanjiWords.Any(k => k.kana == v.wordJp)).ToList();
+        var distinctWords = kanjiWords.Concat(nonKanjiWords).ToList();
+        if (distinctWords.Count == 0) distinctWords = vocabData;
+
+        var words = distinctWords.OrderBy(a => Random.value).ToList();
         if (words.Count == 0) {
             Debug.LogError("LevelTest: No words in vocabData!");
             return;
@@ -203,27 +269,53 @@ public class LevelTestManager : MonoBehaviour
         string correctAns = "";
         List<string> choices = new List<string>();
 
+        // Display word: Kanji if available, otherwise kana or romaji
+        string displayWord = !string.IsNullOrEmpty(vocab.wordJp) ? vocab.wordJp : (!string.IsNullOrEmpty(vocab.kana) ? vocab.kana : vocab.romaji);
+        if (wordLabel != null) wordLabel.text = displayWord;
+
+        bool hasDistinctKana = !string.IsNullOrEmpty(vocab.kana) && vocab.kana != vocab.wordJp;
+
         if (qType == "reading") {
-            correctAns = string.IsNullOrEmpty(vocab.romaji) ? vocab.meaning : vocab.romaji;
-            if (wordLabel != null) wordLabel.text = vocab.kana; 
             if (promptLabel != null) promptLabel.text = "Choose the reading:";
-            foreach (var v in vocabData) { 
-                string s = string.IsNullOrEmpty(v.romaji) ? v.meaning : v.romaji; 
-                if (s != correctAns && !choices.Contains(s)) choices.Add(s); 
+
+            // For Kanji (e.g. 学校), reading is kana (がっこう) or romaji
+            // For Kana (levels 1-24, e.g. あ), reading is romaji ("a")
+            correctAns = hasDistinctKana ? vocab.kana : (!string.IsNullOrEmpty(vocab.romaji) ? vocab.romaji : vocab.kana);
+
+            foreach (var v in vocabData) {
+                bool vHasDistinct = !string.IsNullOrEmpty(v.kana) && v.kana != v.wordJp;
+                string s = hasDistinctKana
+                    ? (vHasDistinct ? v.kana : (!string.IsNullOrEmpty(v.romaji) ? v.romaji : v.kana))
+                    : (!string.IsNullOrEmpty(v.romaji) ? v.romaji : v.kana);
+
+                if (!string.IsNullOrEmpty(s) && s != correctAns && !choices.Contains(s)) {
+                    choices.Add(s);
+                }
             }
         } else {
-            correctAns = string.IsNullOrEmpty(vocab.meaning) ? vocab.romaji : vocab.meaning;
-            if (wordLabel != null) wordLabel.text = vocab.kana; 
             if (promptLabel != null) promptLabel.text = "Choose the meaning:";
-            foreach (var v in vocabData) { 
-                string s = string.IsNullOrEmpty(v.meaning) ? v.romaji : v.meaning; 
-                if (s != correctAns && !choices.Contains(s)) choices.Add(s); 
+
+            // Meaning is primary; fallback to romaji for levels 1-24 where meaning is empty
+            correctAns = !string.IsNullOrEmpty(vocab.meaning) ? vocab.meaning : (!string.IsNullOrEmpty(vocab.romaji) ? vocab.romaji : vocab.kana);
+
+            foreach (var v in vocabData) {
+                string s = !string.IsNullOrEmpty(v.meaning) ? v.meaning : (!string.IsNullOrEmpty(v.romaji) ? v.romaji : v.kana);
+                if (!string.IsNullOrEmpty(s) && s != correctAns && !choices.Contains(s)) {
+                    choices.Add(s);
+                }
             }
         }
 
         if (choices.Count < 3) {
-            string[] fillers = { "a", "i", "u", "e", "o", "ka", "ki", "ku", "ke", "ko" };
-            foreach(var f in fillers) if (f != correctAns && !choices.Contains(f) && choices.Count < 3) choices.Add(f);
+            foreach (var v in vocabData) {
+                string s = (qType == "reading")
+                    ? (hasDistinctKana ? v.kana : (!string.IsNullOrEmpty(v.romaji) ? v.romaji : v.kana))
+                    : (!string.IsNullOrEmpty(v.meaning) ? v.meaning : (!string.IsNullOrEmpty(v.romaji) ? v.romaji : v.kana));
+                if (!string.IsNullOrEmpty(s) && s != correctAns && !choices.Contains(s)) {
+                    choices.Add(s);
+                }
+                if (choices.Count >= 3) break;
+            }
         }
 
         choices = choices.OrderBy(a => Random.value).Take(3).ToList();

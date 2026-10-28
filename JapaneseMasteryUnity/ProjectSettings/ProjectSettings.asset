@@ -155,13 +155,17 @@ PlayerSettings:
   useHDRDisplay: 0
   hdrBitDepth: 0
   m_ColorGamuts: 00000000
-  targetPixelDensity: 0
+  targetPixelDensity: 30
   resolutionScalingMode: 0
   resetResolutionOnWindowResize: 0
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier: {}
-  buildNumber: {}
+  buildNumber:
+    Standalone: 0
+    VisionOS: 0
+    iPhone: 0
+    tvOS: 0
   overrideDefaultApplicationIdentifier: 0
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 22
@@ -180,12 +184,12 @@ PlayerSettings:
   strictShaderVariantMatching: 0
   VertexChannelCompressionMask: 4054
   iPhoneSdkVersion: 988
-  iOSTargetOSVersionString: 
+  iOSTargetOSVersionString: 12.0
   tvOSSdkVersion: 0
   tvOSRequireExtendedGameController: 0
-  tvOSTargetOSVersionString: 
+  tvOSTargetOSVersionString: 12.0
   VisionOSSdkVersion: 0
-  VisionOSTargetOSVersionString: 
+  VisionOSTargetOSVersionString: 1.0
   uIPrerenderedIcon: 0
   uIRequiresPersistentWiFi: 0
   uIRequiresFullScreen: 1
@@ -312,7 +316,7 @@ PlayerSettings:
   locationUsageDescription: 
   microphoneUsageDescription: 
   bluetoothUsageDescription: 
-  macOSTargetOSVersion: 
+  macOSTargetOSVersion: 10.13.0
   switchNMETAOverride: 
   switchNetLibKey: 
   switchSocketMemoryPoolSize: 6144
@@ -559,7 +563,25 @@ PlayerSettings:
   webGLMemoryGeometricGrowthStep: 0.2
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Android: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    EmbeddedLinux: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    GameCoreScarlett: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    GameCoreXboxOne: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    LinuxHeadlessSimulation: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    Nintendo Switch: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    PS4: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    PS5: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    QNX: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    Server: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    Stadia: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    Standalone: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    VisionOS: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    WebGL: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    Windows Store Apps: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    XboxOne: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    iPhone: UNITY_MCP_READY;UNITY_MCP_DEPS_17
+    tvOS: UNITY_MCP_READY;UNITY_MCP_DEPS_17
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend: {}

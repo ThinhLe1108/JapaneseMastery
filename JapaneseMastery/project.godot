@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Japanese Mastery"
 run/main_scene="res://scenes/Login.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.6", "GL Compatibility")
 
 [autoload]
 
@@ -31,3 +31,9 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/vsync/vsync_mode=1
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
