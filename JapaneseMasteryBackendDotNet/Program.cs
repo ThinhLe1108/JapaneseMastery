@@ -46,6 +46,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 // Configure HttpClients
+builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<RomajiConverter>();
 
 // Configure Application Services

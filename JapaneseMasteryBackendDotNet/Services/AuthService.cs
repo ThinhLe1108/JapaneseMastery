@@ -53,7 +53,10 @@ public class AuthService
 
     public async Task<AuthResponse> LoginAsync(AuthRequest request)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+        var user = await _context.Users
+            .Include(u => u.PurchasedItems)
+            .Include(u => u.ActiveTheme)
+            .FirstOrDefaultAsync(u => u.Username == request.Username);
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
         {
             throw new InvalidOperationException("Invalid username or password");
@@ -62,6 +65,17 @@ public class AuthService
         if (!string.IsNullOrEmpty(user.AccessToken) && _jwtService.ValidateToken(user.AccessToken))
         {
             throw new InvalidOperationException("Account is already logged in on another device!");
+        }
+
+        // Validate active theme: user must own it or be its creator (designer/admin)
+        if (user.ActiveThemeId != null)
+        {
+            bool isDesignerOwner = (user.Role == Role.DESIGNER || user.Role == Role.ADMIN) && user.ActiveTheme?.DesignerId == user.Id;
+            if (!user.PurchasedItems.Any(i => i.Id == user.ActiveThemeId) && !isDesignerOwner)
+            {
+                user.ActiveThemeId = null;
+                user.ActiveTheme = null;
+            }
         }
 
         var token = _jwtService.GenerateToken(user.Username);
@@ -75,7 +89,10 @@ public class AuthService
             Username = user.Username,
             Role = user.Role,
             Level = user.Level,
-            GCoin = user.GCoin
+            GCoin = user.GCoin,
+            ActiveThemeId = user.ActiveThemeId,
+            ActiveThemeUrl = user.ActiveTheme?.SecureUrl,
+            PurchasedItemIds = user.PurchasedItems.Select(i => i.Id).ToList()
         };
     }
 

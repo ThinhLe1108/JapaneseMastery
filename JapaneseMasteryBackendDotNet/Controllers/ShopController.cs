@@ -89,5 +89,27 @@ public class ShopController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
+
+    [HttpPost("items/unequip")]
+    public async Task<IActionResult> UnequipTheme([FromQuery] long userId)
+    {
+        try
+        {
+            var updatedUser = await _shopService.UnequipThemeAsync(userId);
+            return Ok(updatedUser);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetUserShopData([FromRoute] long userId)
+    {
+        var data = await _shopService.GetUserShopDataAsync(userId);
+        if (data == null) return NotFound("User not found");
+        return Ok(data);
+    }
 }
 

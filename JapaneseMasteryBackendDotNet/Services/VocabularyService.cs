@@ -17,7 +17,12 @@ public class VocabularyService
 
     public List<Vocabulary> GetAllVocabularies()
     {
-        return _jmdictService.GetAllVocabularies();
+        var vocabs = _jmdictService.GetAllVocabularies();
+        if (vocabs.Count == 0)
+        {
+            vocabs = _context.Vocabularies.AsNoTracking().ToList();
+        }
+        return vocabs;
     }
 
     public async Task<Vocabulary> GetVocabularyByIdAsync(long id)
@@ -41,6 +46,11 @@ public class VocabularyService
     public List<Vocabulary> GetVocabulariesForLevel(int level, IEnumerable<string>? learnedWords = null)
     {
         var baseList = _jmdictService.GetVocabulariesForLevel(level);
+        if (baseList.Count == 0)
+        {
+            baseList = _context.Vocabularies.AsNoTracking().Where(v => v.LevelRequired == level).ToList();
+        }
+
         var expandedList = new List<Vocabulary>();
 
         foreach (var v in baseList)
@@ -103,4 +113,3 @@ public class VocabularyService
         return false;
     }
 }
-

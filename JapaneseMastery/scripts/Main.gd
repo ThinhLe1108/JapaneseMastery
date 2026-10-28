@@ -1,6 +1,7 @@
 extends Control
 
 var bg: TextureRect
+var video_bg: VideoStreamPlayer
 var title: Label
 var header: HBoxContainer
 var name_label: Label
@@ -12,17 +13,12 @@ var btn_solo: Button
 var btn_pvp: Button
 var btn_shop: Button
 var btn_admin: Button
-var btn_mod: Button
 var btn_create_test: Button
 var btn_enter_test_code: Button
 var btn_designer: Button
-var btn_quantum: Button
 
 var enter_code_dialog: AcceptDialog
 var code_input: LineEdit
-
-var quantum_dialog: ConfirmationDialog
-var quantum_option_btn: OptionButton
 
 var solo_dialog: ConfirmationDialog
 var solo_option_btn: OptionButton
@@ -30,13 +26,16 @@ var solo_option_btn: OptionButton
 var time_elapsed: float = 0.0
 var floating_kanjis: Array = []
 var kanji_list = ["水", "火", "木", "金", "土", "日", "月", "風", "空", "桜", "夢", "愛", "心", "星", "光", "剣", "魂", "神"]
+const MAX_FLOATING_KANJI: int = 12
+const KANJI_FONT_SIZES: Array = [42, 60, 78]
 
 func _ready():
 	setup_ui()
 	refresh_data()
+	_apply_theme_background()
 	
 	var timer = Timer.new()
-	timer.wait_time = 0.5
+	timer.wait_time = 1.2
 	timer.autostart = true
 	timer.timeout.connect(_spawn_kanji)
 	add_child(timer)
@@ -47,39 +46,51 @@ func _process(delta):
 		title.position.y = 50 + sin(time_elapsed * 1.5) * 10.0
 		
 	for i in range(floating_kanjis.size() - 1, -1, -1):
-		var k = floating_kanjis[i]
+		var item = floating_kanjis[i]
+		var k = item["node"]
 		if is_instance_valid(k):
-			k.position.y -= k.get_meta("speed") * delta
-			k.position.x += sin(time_elapsed * k.get_meta("sway_freq") + k.get_meta("sway_offset")) * k.get_meta("sway_amp") * delta
-			if k.position.y < -100:
+			item["pos_y"] -= item["speed"] * delta
+			item["pos_x"] += sin(time_elapsed * item["sway_freq"] + item["sway_offset"]) * item["sway_amp"] * delta
+			k.position = Vector2(item["pos_x"], item["pos_y"])
+			
+			if item["pos_y"] < -100:
 				k.queue_free()
 				floating_kanjis.remove_at(i)
-			elif k.position.y < 200:
+			elif item["pos_y"] < 200:
 				k.modulate.a = max(0.0, k.modulate.a - delta * 0.5)
 		else:
 			floating_kanjis.remove_at(i)
 
 func _spawn_kanji():
+	if floating_kanjis.size() >= MAX_FLOATING_KANJI:
+		return
+		
 	var k_label = Label.new()
 	k_label.text = kanji_list[randi() % kanji_list.size()]
-	var size = randf_range(40, 100)
-	k_label.add_theme_font_size_override("font_size", int(size))
+	var size = KANJI_FONT_SIZES[randi() % KANJI_FONT_SIZES.size()]
+	k_label.add_theme_font_size_override("font_size", size)
 	k_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
-	var alpha = randf_range(0.05, 0.2)
+	var alpha = randf_range(0.06, 0.18)
 	k_label.modulate = Color(1, 1, 1, alpha)
 	
 	var view_size = get_viewport_rect().size
 	if view_size.x == 0: view_size = Vector2(1280, 720) # Fallback
-	k_label.position = Vector2(randf_range(0, view_size.x), view_size.y + 50)
-	
-	k_label.set_meta("speed", randf_range(30, 80))
-	k_label.set_meta("sway_freq", randf_range(0.5, 2.0))
-	k_label.set_meta("sway_offset", randf_range(0, PI * 2))
-	k_label.set_meta("sway_amp", randf_range(10, 40))
+	var spawn_x = randf_range(0, view_size.x)
+	var spawn_y = view_size.y + 50
+	k_label.position = Vector2(spawn_x, spawn_y)
 	
 	add_child(k_label)
 	move_child(k_label, 1) # Put it just above background
-	floating_kanjis.append(k_label)
+	
+	floating_kanjis.append({
+		"node": k_label,
+		"pos_x": spawn_x,
+		"pos_y": spawn_y,
+		"speed": randf_range(30, 70),
+		"sway_freq": randf_range(0.5, 2.0),
+		"sway_offset": randf_range(0, PI * 2),
+		"sway_amp": randf_range(10, 35)
+	})
 
 func setup_ui():
 	# Background with Gradient
@@ -94,9 +105,18 @@ func setup_ui():
 	bg_tex.gradient = grad
 	bg.texture = bg_tex
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Important: stretch the texture
-	bg.ignore_texture_size = true
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	add_child(bg)
+	
+	# Video Background (plays animated .ogv themes)
+	video_bg = VideoStreamPlayer.new()
+	video_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	video_bg.expand = true
+	video_bg.loop = true
+	video_bg.volume_db = -80.0
+	video_bg.hide()
+	add_child(video_bg)
 	
 	# Header Background (Semi-transparent)
 	var header_bg = ColorRect.new()
@@ -153,20 +173,16 @@ func setup_ui():
 	btn_placement.pressed.connect(_on_placement_pressed)
 	vbox.add_child(btn_placement)
 	
-	btn_quantum = create_menu_btn("Quantum Mode")
-	btn_quantum.pressed.connect(_on_quantum_pressed)
-	vbox.add_child(btn_quantum)
-	
 	btn_solo = create_menu_btn("Solo Learning (Level X)")
 	btn_solo.pressed.connect(_on_solo_pressed)
 	vbox.add_child(btn_solo)
 	
-	btn_pvp = create_menu_btn("PvP Arena (Locked)")
-	btn_pvp.disabled = true
+	btn_pvp = create_menu_btn("⚔️ PvP Arena (Locked)")
+	btn_pvp.pressed.connect(_on_pvp_pressed)
 	vbox.add_child(btn_pvp)
 	
-	btn_shop = create_menu_btn("Shop (Locked)")
-	btn_shop.disabled = true
+	btn_shop = create_menu_btn("🛒 Shop & Themes")
+	btn_shop.pressed.connect(_on_shop_pressed)
 	vbox.add_child(btn_shop)
 	
 	btn_create_test = create_menu_btn("📝 Create New Test")
@@ -184,12 +200,7 @@ func setup_ui():
 	btn_admin.hide()
 	vbox.add_child(btn_admin)
 	
-	btn_mod = create_menu_btn("🛡️ Moderation Panel")
-	btn_mod.pressed.connect(func(): Global.goto_scene("res://scenes/ModeratorPanel.tscn"))
-	btn_mod.hide()
-	vbox.add_child(btn_mod)
-	
-	btn_designer = create_menu_btn("🎨 Designer Shop")
+	btn_designer = create_menu_btn("🎨 Designer Studio")
 	btn_designer.pressed.connect(func(): Global.goto_scene("res://scenes/DesignerPanel.tscn"))
 	btn_designer.hide()
 	vbox.add_child(btn_designer)
@@ -275,12 +286,18 @@ func refresh_data():
 	
 	btn_placement.disabled = false
 	btn_placement.text = "Level-Up Test (Lv %d -> %d)" % [level, level + 1]
-	var start_level = ((level - 1) / 5) * 5 + 1
-	var max_lvl = start_level + 4
-	btn_quantum.text = "Quantum Test"
 	
 	btn_solo.disabled = false
 	btn_solo.text = "Learn (Level %d)" % level
+	
+	if level >= 25:
+		btn_pvp.text = "⚔️ PvP Arena"
+	else:
+		btn_pvp.text = "⚔️ PvP Arena (Locked - Lv 25+)"
+	btn_pvp.disabled = false
+	
+	btn_shop.text = "🛒 Shop & Themes"
+	btn_shop.disabled = false
 	
 	var account = Database.get_account()
 	var role = ""
@@ -289,59 +306,39 @@ func refresh_data():
 		
 	if role == "ADMIN":
 		btn_admin.show()
-		btn_mod.hide()
 		btn_designer.hide()
 		jlpt_label.hide()
-		coin_label.hide()
+		coin_label.show()
 		btn_placement.hide()
 		btn_solo.hide()
 		btn_pvp.hide()
-		btn_shop.hide()
-		btn_quantum.hide()
-		btn_create_test.hide()
-		btn_enter_test_code.hide()
-	elif role == "MODERATOR":
-		btn_admin.hide()
-		btn_mod.show()
-		btn_designer.hide()
-		jlpt_label.hide()
-		coin_label.hide()
-		btn_placement.hide()
-		btn_solo.hide()
-		btn_pvp.hide()
-		btn_shop.hide()
-		btn_quantum.hide()
+		btn_shop.show()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "DESIGNER":
 		btn_admin.hide()
-		btn_mod.hide()
 		btn_designer.show()
 		jlpt_label.hide()
-		coin_label.hide()
+		coin_label.show()
 		btn_placement.hide()
 		btn_solo.hide()
 		btn_pvp.hide()
-		btn_shop.hide()
-		btn_quantum.hide()
+		btn_shop.show()
 		btn_create_test.hide()
 		btn_enter_test_code.hide()
 	elif role == "SENSEI":
 		btn_admin.hide()
-		btn_mod.hide()
 		btn_designer.hide()
 		jlpt_label.hide()
-		coin_label.hide()
+		coin_label.show()
 		btn_placement.hide()
 		btn_solo.hide()
 		btn_pvp.hide()
-		btn_shop.hide()
-		btn_quantum.hide()
+		btn_shop.show()
 		btn_create_test.show()
 		btn_enter_test_code.hide()
 	else: # PLAYER
 		btn_admin.hide()
-		btn_mod.hide()
 		btn_designer.hide()
 		jlpt_label.show()
 		coin_label.show()
@@ -349,48 +346,167 @@ func refresh_data():
 		btn_solo.show()
 		btn_pvp.show()
 		btn_shop.show()
-		btn_quantum.show()
 		btn_create_test.hide()
 		btn_enter_test_code.show()
 
 func _on_placement_pressed():
 	Global.goto_scene("res://scenes/LevelTest.tscn")
 
-func _on_quantum_pressed():
-	if quantum_dialog == null:
-		_setup_quantum_dialog()
-	
-	quantum_option_btn.clear()
+func _on_pvp_pressed():
 	var level = Global.get_current_level()
-	quantum_option_btn.add_item("Quantum Test (Level %d)" % level, 1)
-	quantum_option_btn.add_item("Comprehensive Test (Level 1 - %d)" % level, 2)
-	
-	quantum_dialog.popup_centered()
+	if level < 25:
+		var dlg = AcceptDialog.new()
+		dlg.title = "PvP Arena Locked"
+		dlg.dialog_text = "You must reach Level 25 or higher to enter the PvP Arena!\nCurrent Level: %d" % level
+		dlg.dialog_autowrap = true
+		add_child(dlg)
+		dlg.popup_centered(Vector2i(380, 150))
+		return
+	Global.goto_scene("res://scenes/PvP.tscn")
 
-func _setup_quantum_dialog():
-	quantum_dialog = ConfirmationDialog.new()
-	quantum_dialog.title = "Select Quantum Test Mode"
-	
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	
-	var lbl = Label.new()
-	lbl.text = "Which mode do you want to play?"
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(lbl)
-	
-	quantum_option_btn = OptionButton.new()
-	quantum_option_btn.custom_minimum_size = Vector2(300, 40)
-	vbox.add_child(quantum_option_btn)
-	
-	quantum_dialog.add_child(vbox)
-	quantum_dialog.confirmed.connect(_on_quantum_confirmed)
-	add_child(quantum_dialog)
+func _on_shop_pressed():
+	Global.goto_scene("res://scenes/Shop.tscn")
 
-func _on_quantum_confirmed():
-	var selected_id = quantum_option_btn.get_item_id(quantum_option_btn.selected)
-	Global.quantum_mode = selected_id
-	Global.goto_scene("res://scenes/QuantumTest.tscn")
+func _is_video_url(url: String) -> bool:
+	var lower = url.to_lower()
+	for ext in [".mp4", ".webm", ".mov", ".mkv", ".avi", ".ogv"]:
+		if lower.ends_with(ext):
+			return true
+	if "/video/upload/" in lower:
+		return true
+	return false
+
+func _get_image_fetch_url(url: String) -> String:
+	if url.is_empty():
+		return ""
+	var clean_url = url.strip_edges()
+	var lower = clean_url.to_lower()
+	for ext in [".mp4", ".webm", ".mov", ".mkv", ".avi"]:
+		if lower.ends_with(ext):
+			return clean_url.substr(0, clean_url.length() - ext.length()) + ".jpg"
+	return clean_url
+
+func _get_video_fetch_url(url: String) -> String:
+	if url.is_empty(): return ""
+	var clean_url = url.strip_edges()
+	var ogv_url = clean_url
+	var last_dot = ogv_url.rfind(".")
+	if last_dot != -1:
+		ogv_url = ogv_url.substr(0, last_dot) + ".ogv"
+	else:
+		ogv_url += ".ogv"
+	
+	if "/upload/" in ogv_url and not "/f_ogv/" in ogv_url:
+		ogv_url = ogv_url.replace("/upload/", "/upload/f_ogv/")
+		
+	return ogv_url
+
+func _play_cached_video_if_exists() -> bool:
+	if FileAccess.file_exists("user://menu_theme_video.ogv") and is_instance_valid(video_bg):
+		var stream = VideoStreamTheora.new()
+		stream.file = "user://menu_theme_video.ogv"
+		video_bg.stream = stream
+		video_bg.show()
+		video_bg.play()
+		return true
+	return false
+
+func _apply_theme_background():
+	var theme_url = str(Database.get_account().get("menu_theme_url", ""))
+	if theme_url.is_empty():
+		# Reset to default gradient if no theme is equipped
+		if is_instance_valid(video_bg):
+			video_bg.stop()
+			video_bg.hide()
+		if is_instance_valid(bg):
+			var bg_tex = GradientTexture2D.new()
+			bg_tex.width = 1280
+			bg_tex.height = 720
+			bg_tex.fill_from = Vector2(0.5, 0)
+			bg_tex.fill_to = Vector2(0.5, 1)
+			var grad = Gradient.new()
+			grad.set_color(0, Color(0.08, 0.1, 0.18))
+			grad.set_color(1, Color(0.15, 0.2, 0.35))
+			bg_tex.gradient = grad
+			bg.texture = bg_tex
+		return
+		
+	# Tier 1: Check local image cache for instant poster display
+	if FileAccess.file_exists("user://menu_theme_cache.dat"):
+		var f = FileAccess.open("user://menu_theme_cache.dat", FileAccess.READ)
+		if f:
+			var bytes = f.get_buffer(f.get_length())
+			f.close()
+			var img = _load_image_from_buffer_safe(bytes)
+			if img != null and is_instance_valid(bg):
+				bg.texture = ImageTexture.create_from_image(img)
+				bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	
+	var is_video = _is_video_url(theme_url)
+	if is_video:
+		_play_cached_video_if_exists()
+	else:
+		if is_instance_valid(video_bg):
+			video_bg.stop()
+			video_bg.hide()
+		
+	# Tier 2: Refresh/Download image snapshot
+	var fetch_url = _get_image_fetch_url(theme_url)
+	if not fetch_url.is_empty():
+		var req = HTTPRequest.new()
+		add_child(req)
+		req.request_completed.connect(func(res, code, headers, body):
+			req.queue_free()
+			if code == 200:
+				var img = _load_image_from_buffer_safe(body)
+				if img != null and is_instance_valid(bg):
+					var tex = ImageTexture.create_from_image(img)
+					bg.texture = tex
+					bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+					bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+					var cf = FileAccess.open("user://menu_theme_cache.dat", FileAccess.WRITE)
+					if cf:
+						cf.store_buffer(body)
+						cf.close()
+		)
+		req.request(fetch_url)
+		
+	# Tier 3: If video, download .ogv stream from Cloudinary
+	if is_video:
+		var v_url = _get_video_fetch_url(theme_url)
+		var v_req = HTTPRequest.new()
+		add_child(v_req)
+		v_req.request_completed.connect(func(res, code, headers, body):
+			v_req.queue_free()
+			if code == 200 and body.size() > 0:
+				var vf = FileAccess.open("user://menu_theme_video.ogv", FileAccess.WRITE)
+				if vf:
+					vf.store_buffer(body)
+					vf.close()
+					_play_cached_video_if_exists()
+		)
+		v_req.request(v_url)
+
+func _load_image_from_buffer_safe(body: PackedByteArray) -> Image:
+	if body.size() < 4:
+		return null
+	var img = Image.new()
+	# PNG magic bytes: 89 50 4E 47
+	if body[0] == 0x89 and body[1] == 0x50 and body[2] == 0x4E and body[3] == 0x47:
+		if img.load_png_from_buffer(body) == OK: return img
+	# JPEG magic bytes: FF D8 FF
+	elif body[0] == 0xFF and body[1] == 0xD8 and body[2] == 0xFF:
+		if img.load_jpg_from_buffer(body) == OK: return img
+	# WebP magic bytes: RIFF .... WEBP
+	elif body[0] == 0x52 and body[1] == 0x49 and body[2] == 0x46 and body[3] == 0x46:
+		if img.load_webp_from_buffer(body) == OK: return img
+	
+	# Fallback attempts
+	if img.load_webp_from_buffer(body) == OK: return img
+	if img.load_png_from_buffer(body) == OK: return img
+	if img.load_jpg_from_buffer(body) == OK: return img
+	return null
 
 func _on_solo_pressed():
 	if solo_dialog == null:

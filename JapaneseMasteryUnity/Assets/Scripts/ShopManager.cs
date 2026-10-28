@@ -215,7 +215,7 @@ public class ShopManager : MonoBehaviour
     void OnItemClick(Dictionary<string, object> item)
     {
         string id = item["id"].ToString();
-        string url = item["secureUrl"].ToString();
+        string url = item.ContainsKey("secureUrl") && item["secureUrl"] != null ? item["secureUrl"].ToString() : "";
         string purchased = PlayerPrefs.GetString(GetUserKey("PurchasedThemes"), "");
         string currentTheme = PlayerPrefs.GetString(GetUserKey("MenuThemeUrl"), "");
         
@@ -361,9 +361,13 @@ public class ShopManager : MonoBehaviour
                     foreach(var item in allItems) {
                         bool isApproved = false;
                         if (item.ContainsKey("approved")) {
-                            isApproved = item["approved"].ToString().ToLower() == "true" || item["approved"].ToString() == "1";
+                            isApproved = item["approved"] != null && (item["approved"].ToString().ToLower() == "true" || item["approved"].ToString() == "1");
                         } else if (item.ContainsKey("is_approved")) {
-                            isApproved = item["is_approved"].ToString().ToLower() == "true" || item["is_approved"].ToString() == "1";
+                            isApproved = item["is_approved"] != null && (item["is_approved"].ToString().ToLower() == "true" || item["is_approved"].ToString() == "1");
+                        } else if (item.ContainsKey("isApproved")) {
+                            isApproved = item["isApproved"] != null && (item["isApproved"].ToString().ToLower() == "true" || item["isApproved"].ToString() == "1");
+                        } else {
+                            isApproved = true;
                         }
                         
                         if (isApproved && item.ContainsKey("type") && item["type"].ToString() == "THEME") {

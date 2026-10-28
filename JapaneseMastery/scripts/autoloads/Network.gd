@@ -10,36 +10,41 @@ signal register_success(user_data)
 signal register_failed(error_msg)
 
 var _http_request: HTTPRequest
+var _heartbeat_request: HTTPRequest
+var _heartbeat_in_flight: bool = false
 
 func _ready():
 	_http_request = HTTPRequest.new()
 	add_child(_http_request)
 	_http_request.request_completed.connect(_on_request_completed)
 	
+	_heartbeat_request = HTTPRequest.new()
+	add_child(_heartbeat_request)
+	_heartbeat_request.request_completed.connect(_on_heartbeat_completed)
+	
 	get_tree().set_auto_accept_quit(false)
 	
+	# Heartbeat timer: check session validity every 10s without spamming
 	var timer = Timer.new()
-	timer.wait_time = 2.0
+	timer.wait_time = 10.0
 	timer.autostart = true
 	timer.timeout.connect(_check_heartbeat)
 	add_child(timer)
 
 func _check_heartbeat():
-	if is_logged_in and jwt_token != "":
-		print("[Heartbeat] Checking token valid...")
+	if is_logged_in and jwt_token != "" and not _heartbeat_in_flight:
 		var user_id = Database.get_account().get("user_id", -1)
 		if user_id != -1:
-			var req = HTTPRequest.new()
-			add_child(req)
-			req.request_completed.connect(func(res, code, headers, body):
-				if code == 401:
-					print("[Heartbeat] Bị đá văng do đăng nhập ở nơi khác!")
-					logout(true)
-					Global.goto_scene("res://scenes/Login.tscn")
-				req.queue_free()
-			)
+			_heartbeat_in_flight = true
 			var headers = PackedStringArray(["Authorization: Bearer " + jwt_token])
-			req.request(BASE_URL + "/player/%d/heartbeat" % user_id, headers, HTTPClient.METHOD_GET)
+			_heartbeat_request.request(BASE_URL + "/player/%d/heartbeat" % user_id, headers, HTTPClient.METHOD_GET)
+
+func _on_heartbeat_completed(result, code, headers, body):
+	_heartbeat_in_flight = false
+	if code == 401:
+		print("[Heartbeat] Bị đá văng do đăng nhập ở nơi khác!")
+		logout(true)
+		Global.goto_scene("res://scenes/Login.tscn")
 
 func register(username, password):
 	var body = JSON.stringify({"username": username, "password": password})
@@ -65,11 +70,15 @@ func logout(local_only: bool = false):
 
 	jwt_token = ""
 	is_logged_in = false
-	Database.update_account("user_id", -1)
-	Database.update_account("display_name", "New Player")
-	Database.update_account("current_level", 1)
-	Database.update_account("g_coin_balance", 0)
-	Database.update_account("role", "PLAYER")
+	Database.reset_session()
+	
+	# Clear cached theme files on logout
+	var da = DirAccess.open("user://")
+	if da != null:
+		if da.file_exists("user://menu_theme_cache.dat"):
+			da.remove("user://menu_theme_cache.dat")
+		if da.file_exists("user://menu_theme_video.ogv"):
+			da.remove("user://menu_theme_video.ogv")
 
 func _on_request_completed(result, response_code, headers, body):
 	var action = _http_request.get_meta("action")
@@ -84,12 +93,29 @@ func _on_request_completed(result, response_code, headers, body):
 			is_logged_in = true
 			
 			# Cập nhật thông tin vào Database local tạm thời
-			Database.update_account("user_id", int(data.get("id", -1)))
+			var uid = int(data.get("id", -1))
+			Database.update_account("user_id", uid)
 			Database.update_account("display_name", data.get("username", "Player"))
 			Database.update_account("current_level", data.get("level", 1))
 			Database.update_account("role", data.get("role", "PLAYER"))
 			Database.update_account("g_coin_balance", data.get("gCoin", 0))
 			
+			var p_ids = data.get("purchasedItemIds", [])
+			Database.update_account("purchased_theme_ids", p_ids if p_ids is Array else [])
+			
+			var act_url = data.get("activeThemeUrl")
+			if act_url != null and str(act_url) != "" and str(act_url) != "null":
+				Database.update_account("menu_theme_url", str(act_url))
+			else:
+				Database.update_account("menu_theme_url", "")
+				var l_da = DirAccess.open("user://")
+				if l_da != null:
+					if l_da.file_exists("user://menu_theme_cache.dat"):
+						l_da.remove("user://menu_theme_cache.dat")
+					if l_da.file_exists("user://menu_theme_video.ogv"):
+						l_da.remove("user://menu_theme_video.ogv")
+			
+			fetch_user_shop_data(uid)
 			fetch_and_sync_vocabularies()
 			
 			if action == "login":
@@ -111,6 +137,37 @@ func _handle_error(action, msg):
 		emit_signal("login_failed", msg)
 	else:
 		emit_signal("register_failed", msg)
+
+func fetch_user_shop_data(uid: int):
+	if uid <= 0: return
+	var req = HTTPRequest.new()
+	add_child(req)
+	req.request_completed.connect(func(res, code, headers, body):
+		req.queue_free()
+		if code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK and json.data is Dictionary:
+				var sdata = json.data
+				if sdata.has("purchasedItemIds") and sdata["purchasedItemIds"] is Array:
+					Database.update_account("purchased_theme_ids", sdata["purchasedItemIds"])
+				else:
+					Database.update_account("purchased_theme_ids", [])
+				var act_url = sdata.get("activeThemeUrl")
+				if act_url != null and str(act_url) != "" and str(act_url) != "null":
+					Database.update_account("menu_theme_url", str(act_url))
+				else:
+					Database.update_account("menu_theme_url", "")
+					var l_da = DirAccess.open("user://")
+					if l_da != null:
+						if l_da.file_exists("user://menu_theme_cache.dat"):
+							l_da.remove("user://menu_theme_cache.dat")
+						if l_da.file_exists("user://menu_theme_video.ogv"):
+							l_da.remove("user://menu_theme_video.ogv")
+				if sdata.has("gCoin"):
+					Database.update_account("g_coin_balance", int(sdata["gCoin"]))
+	)
+	var hdrs = PackedStringArray(["Authorization: Bearer " + jwt_token, "Content-Type: application/json"])
+	req.request(BASE_URL + "/shop/user/%d" % uid, hdrs, HTTPClient.METHOD_GET)
 
 func fetch_and_sync_vocabularies():
 	var req = HTTPRequest.new()

@@ -13,5 +13,9 @@ public class AuthResponse
 
     [JsonPropertyName("gCoin")]
     public int GCoin { get; set; }
+
+    public long? ActiveThemeId { get; set; }
+    public string? ActiveThemeUrl { get; set; }
+    public List<long> PurchasedItemIds { get; set; } = new();
 }
 

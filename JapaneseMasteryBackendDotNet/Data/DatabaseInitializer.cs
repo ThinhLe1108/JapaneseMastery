@@ -26,6 +26,9 @@ IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('shop_items
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('shop_items') AND name = 'secure_url')
     ALTER TABLE shop_items ADD secure_url VARCHAR(500) NULL;
 
+IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('shop_items') AND name = 'is_approved')
+    UPDATE shop_items SET is_approved = 1 WHERE is_approved IS NULL;
+
 IF OBJECT_ID('user_purchased_items', 'U') IS NULL
 BEGIN
     CREATE TABLE user_purchased_items (
@@ -54,7 +57,22 @@ END
                 };
                 context.Users.Add(admin);
                 await context.SaveChangesAsync();
+                adminUser = admin;
                 logger.LogInformation("Default ADMIN account created: admin / 123");
+            }
+
+            // Ensure shop has items if database is freshly seeded
+            if (!await context.ShopItems.AnyAsync())
+            {
+                var defaultItems = new List<ShopItem>
+                {
+                    new() { Name = "Sakura Pink Theme", Type = ShopItemType.THEME, Price = 500, IsApproved = true, DesignerId = adminUser.Id, SecureUrl = "https://images.unsplash.com/photo-1522383225653-ed111181a951" },
+                    new() { Name = "Cyberpunk Neo-Tokyo", Type = ShopItemType.THEME, Price = 800, IsApproved = true, DesignerId = adminUser.Id, SecureUrl = "https://images.unsplash.com/photo-1509198397868-475647b2a1e5" },
+                    new() { Name = "Mount Fuji Twilight", Type = ShopItemType.THEME, Price = 1000, IsApproved = true, DesignerId = adminUser.Id, SecureUrl = "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e" }
+                };
+                context.ShopItems.AddRange(defaultItems);
+                await context.SaveChangesAsync();
+                logger.LogInformation("Default Shop Items seeded.");
             }
         }
         catch (Exception ex)
@@ -63,4 +81,3 @@ END
         }
     }
 }
-

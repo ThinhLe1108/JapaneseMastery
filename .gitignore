@@ -35,6 +35,7 @@ hs_err_pid*
 # Data files
 JMdict_e
 *.json
+!JapaneseMastery/kanjivg_paths.json
 *.sqlite
 *.db
 

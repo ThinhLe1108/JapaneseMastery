@@ -70,16 +70,70 @@ public class CloudinaryService
         if (file == null || file.Length == 0) return (null, null);
 
         await using var stream = file.OpenReadStream();
-        var uploadParams = new ImageUploadParams
-        {
-            File = new FileDescription(file.FileName, stream),
-            UseFilename = true,
-            UniqueFilename = true,
-            Overwrite = false
-        };
+        var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        bool isVideo = ext is ".mp4" or ".webm" or ".mov" or ".avi" or ".mkv" ||
+                       (file.ContentType != null && file.ContentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase));
 
-        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-        return (uploadResult.SecureUrl?.ToString(), uploadResult.PublicId);
+        _logger.LogInformation("Uploading file {FileName} ({Length} bytes, isVideo: {IsVideo}) to Cloudinary...", file.FileName, file.Length, isVideo);
+
+        if (isVideo)
+        {
+            var uploadParams = new VideoUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                UseFilename = true,
+                UniqueFilename = true,
+                Overwrite = false
+            };
+
+            VideoUploadResult uploadResult;
+            if (file.Length > 20_000_000)
+            {
+                uploadResult = await _cloudinary.UploadLargeAsync(uploadParams);
+            }
+            else
+            {
+                uploadResult = await _cloudinary.UploadAsync(uploadParams);
+            }
+
+            if (uploadResult.Error != null)
+            {
+                _logger.LogError("Cloudinary video upload failed: {Error}", uploadResult.Error.Message);
+                throw new InvalidOperationException($"Cloudinary video upload failed: {uploadResult.Error.Message}");
+            }
+
+            _logger.LogInformation("Cloudinary video uploaded successfully! SecureUrl: {Url}", uploadResult.SecureUrl);
+            return (uploadResult.SecureUrl?.ToString(), uploadResult.PublicId);
+        }
+        else
+        {
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                UseFilename = true,
+                UniqueFilename = true,
+                Overwrite = false
+            };
+
+            ImageUploadResult uploadResult;
+            if (file.Length > 20_000_000)
+            {
+                uploadResult = await _cloudinary.UploadLargeAsync(uploadParams);
+            }
+            else
+            {
+                uploadResult = await _cloudinary.UploadAsync(uploadParams);
+            }
+
+            if (uploadResult.Error != null)
+            {
+                _logger.LogError("Cloudinary image upload failed: {Error}", uploadResult.Error.Message);
+                throw new InvalidOperationException($"Cloudinary image upload failed: {uploadResult.Error.Message}");
+            }
+
+            _logger.LogInformation("Cloudinary image uploaded successfully! SecureUrl: {Url}", uploadResult.SecureUrl);
+            return (uploadResult.SecureUrl?.ToString(), uploadResult.PublicId);
+        }
     }
 
     public string GenerateOptimizedUrl(string? publicId)
@@ -91,4 +145,3 @@ public class CloudinaryService
             .BuildUrl(publicId);
     }
 }
-

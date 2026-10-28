@@ -41,13 +41,13 @@ public class DesignerController : ControllerBase
             Name = request.Name,
             Price = request.Price,
             Type = request.Type,
-            IsApproved = false
+            IsApproved = true
         };
 
         _context.ShopItems.Add(item);
+        designer.PurchasedItems.Add(item);
         await _context.SaveChangesAsync();
 
-        return Ok("Item created successfully. Pending moderation.");
+        return Ok("Item created successfully and is now active in the Shop.");
     }
 }
-

@@ -46,7 +46,9 @@ public class RomajiConverter
                                    .Replace("ī", "ii")
                                    .Replace("ū", "uu")
                                    .Replace("ē", "ee")
-                                   .Replace("ō", "ou");
+                                   .Replace("ō", "ou")
+                                   .Replace("〜", "~")
+                                   .Replace("～", "~");
 
                     Cache[text] = romaji;
                     return romaji;

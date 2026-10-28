@@ -240,6 +240,7 @@ public class PvPManager : MonoBehaviour
     public void LeaveQueue()
     {
         isPolling = false;
+        Input.imeCompositionMode = IMECompositionMode.Auto;
         StartCoroutine(SimplePost(NetworkManager.Instance.BASE_URL + $"/api/pvp/queue/leave/{Global.UserId}"));
         HideAllPanels();
     }
@@ -248,6 +249,8 @@ public class PvPManager : MonoBehaviour
     {
         isPolling = false;
         inMatch = false;
+        isTyping = false;
+        Input.imeCompositionMode = IMECompositionMode.Auto;
         StartCoroutine(SimplePost(NetworkManager.Instance.BASE_URL + $"/api/pvp/match/quit/{Global.UserId}"));
         HideAllPanels();
         Global.GotoScene("Main");
@@ -311,6 +314,10 @@ public class PvPManager : MonoBehaviour
         {
             inMatch = true;
             ShowPanel(matchPanel);
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            }
             if (statusText != null) statusText.gameObject.SetActive(true);
             currentInput = "";
             lastRenderedText = "";
@@ -328,7 +335,7 @@ public class PvPManager : MonoBehaviour
                 {
                     paragraphText.font.ClearFontAssetData(false);
                 }
-// REMOVED: paragraphText.material = paragraphText.font.material;
+                // REMOVED: paragraphText.material = paragraphText.font.material;
                 // This manual assignment can cause IndexOutOfRangeException in TMP 3.0.9
             }
 
@@ -353,6 +360,7 @@ public class PvPManager : MonoBehaviour
                 isCountdown = false;
                 isTyping = true;
                 matchStartTime = Time.time;
+                Input.imeCompositionMode = IMECompositionMode.Off;
                 UpdateRichText();
             }
             
@@ -365,6 +373,7 @@ public class PvPManager : MonoBehaviour
         {
             isTyping = false;
             isCountdown = false;
+            Input.imeCompositionMode = IMECompositionMode.Auto;
             long winnerId = -1;
             if (data.ContainsKey("winnerId")) long.TryParse(data["winnerId"].ToString(), out winnerId);
             int reward = 0;
@@ -398,37 +407,58 @@ public class PvPManager : MonoBehaviour
 
     private void HandleTypingInput()
     {
-        if (hiddenInput == null) CreateHiddenInput();
-        
-        // Optimize: Only activate if not focused and user is not clicking elsewhere
-        if (hiddenInput != null && !hiddenInput.isFocused && !Input.GetMouseButton(0))
+        bool changed = false;
+        bool backspaceHandled = false;
+
+        string inputStr = Input.inputString;
+        if (!string.IsNullOrEmpty(inputStr))
         {
-            hiddenInput.ActivateInputField();
+            foreach (char c in inputStr)
+            {
+                if (c == '\b')
+                {
+                    backspaceHandled = true;
+                    if (currentInput.Length > 0)
+                    {
+                        currentInput = currentInput.Substring(0, currentInput.Length - 1);
+                        changed = true;
+                    }
+                }
+                else if (c != '\r' && c != '\n' && !char.IsControl(c))
+                {
+                    if (currentInput.Length < currentRomaji.Length + 10)
+                    {
+                        currentInput += char.ToLower(c);
+                        changed = true;
+                    }
+                }
+            }
         }
-    }
 
-    private void CreateHiddenInput()
-    {
-        var go = new GameObject("HiddenInput");
-        go.transform.SetParent(pvpCanvas.transform, false);
-        var rect = go.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(100, 100);
-        rect.anchoredPosition = new Vector2(-10000, -10000);
+        // Fallback for Backspace if inputString did not deliver '\b'
+        if (!backspaceHandled && Input.GetKeyDown(KeyCode.Backspace))
+        {
+            if (currentInput.Length > 0)
+            {
+                currentInput = currentInput.Substring(0, currentInput.Length - 1);
+                changed = true;
+            }
+        }
 
-        hiddenInput = go.AddComponent<TMP_InputField>();
-        var textGo = new GameObject("Text");
-        textGo.transform.SetParent(go.transform, false);
-        var txt = textGo.AddComponent<TextMeshProUGUI>();
-        txt.color = new Color(0,0,0,0);
-        if (paragraphText != null) txt.font = paragraphText.font;
-
-        hiddenInput.textComponent = txt;
-        hiddenInput.textViewport = rect;
-        hiddenInput.onValueChanged.AddListener((val) => {
-            currentInput = val.ToLower();
+        if (changed)
+        {
             UpdateRichText();
             CheckCompletion();
-        });
+        }
+
+        // On mobile devices, keep native onscreen keyboard open if needed
+        if (Application.isMobilePlatform)
+        {
+            if (TouchScreenKeyboard.visible == false)
+            {
+                TouchScreenKeyboard.Open(currentInput, TouchScreenKeyboardType.ASCIICapable);
+            }
+        }
     }
 
     private void UpdateRichText()
@@ -513,6 +543,7 @@ public class PvPManager : MonoBehaviour
         if (currentInput == currentRomaji && currentRomaji.Length > 0)
         {
             isTyping = false;
+            Input.imeCompositionMode = IMECompositionMode.Auto;
             long timeMs = (long)((Time.time - matchStartTime) * 1000);
             StartCoroutine(SimplePost(NetworkManager.Instance.BASE_URL + $"/api/pvp/match/finish/{Global.UserId}?timeMs={timeMs}"));
         }
@@ -529,6 +560,8 @@ public class PvPManager : MonoBehaviour
     {
         isPolling = false;
         inMatch = false;
+        isTyping = false;
+        Input.imeCompositionMode = IMECompositionMode.Auto;
         HideAllPanels();
         if (pvpCanvas != null) pvpCanvas.SetActive(true);
         if (resultPanel != null) resultPanel.SetActive(true);
@@ -561,5 +594,10 @@ public class PvPManager : MonoBehaviour
         HideAllPanels();
         if (pvpCanvas != null) pvpCanvas.SetActive(true);
         if (panelToShow != null) panelToShow.SetActive(true);
+    }
+
+    private void OnDestroy()
+    {
+        Input.imeCompositionMode = IMECompositionMode.Auto;
     }
 }

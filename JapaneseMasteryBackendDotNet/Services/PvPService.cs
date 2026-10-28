@@ -55,7 +55,9 @@ public class PvPService
 
             var candidates = new[]
             {
+                Path.Combine(AppContext.BaseDirectory, "pvp_paragraphs.txt"),
                 Path.Combine(Directory.GetCurrentDirectory(), "pvp_paragraphs.txt"),
+                Path.Combine(baseDir, "JapaneseMasteryBackendDotNet", "pvp_paragraphs.txt"),
                 Path.Combine(baseDir, "JapaneseMasteryBackend", "pvp_paragraphs.txt"),
                 Path.Combine(baseDir, "pvp_paragraphs.txt")
             };
@@ -71,6 +73,11 @@ public class PvPService
                         _paragraphs.Add(trimmed);
                     }
                 }
+                _logger.LogInformation("Loaded {Count} PvP paragraphs from {Path}", _paragraphs.Count, filePath);
+            }
+            else
+            {
+                _logger.LogWarning("pvp_paragraphs.txt not found in any candidate path.");
             }
         }
         catch (Exception ex)
@@ -199,8 +206,8 @@ public class PvPService
             match.Paragraph = jp;
 
             var rp = await _romajiConverter.ToRomajiAsync(jp);
-            if (string.IsNullOrWhiteSpace(rp)) rp = "error";
-            match.RomajiParagraph = rp;
+            if (string.IsNullOrWhiteSpace(rp) || rp == "error") rp = jp;
+            match.RomajiParagraph = rp.Replace("〜", "~").Replace("～", "~");
 
             _activeMatches[matchId] = match;
             _userMatchMap[p1] = matchId;
@@ -239,8 +246,8 @@ public class PvPService
             match.Paragraph = p;
 
             var rp = await _romajiConverter.ToRomajiAsync(p);
-            if (string.IsNullOrWhiteSpace(rp)) rp = "error";
-            match.RomajiParagraph = rp;
+            if (string.IsNullOrWhiteSpace(rp) || rp == "error") rp = p;
+            match.RomajiParagraph = rp.Replace("〜", "~").Replace("～", "~");
 
             _activeMatches[matchId] = match;
             _userMatchMap[p1] = matchId;
@@ -258,6 +265,17 @@ public class PvPService
     {
         var all = _jmdictService.GetAllVocabularies();
         var valid = all.Where(v => v.LevelRequired <= 24).ToList();
+        if (valid.Count == 0)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                valid = context.Vocabularies.AsNoTracking().Where(v => v.LevelRequired <= 24).ToList();
+            }
+            catch { }
+        }
+
         if (valid.Count == 0) return "テスト 単語";
 
         var shuffled = valid.OrderBy(_ => _random.Next()).Take(count);
@@ -590,8 +608,8 @@ public class PvPService
         match.Paragraph = p;
 
         var rp = await _romajiConverter.ToRomajiAsync(p);
-        if (string.IsNullOrWhiteSpace(rp)) rp = "error";
-        match.RomajiParagraph = rp;
+        if (string.IsNullOrWhiteSpace(rp) || rp == "error") rp = p;
+        match.RomajiParagraph = rp.Replace("〜", "~").Replace("～", "~");
 
         _activeMatches[matchId] = match;
         _userMatchMap[hostId] = matchId;

@@ -7,7 +7,9 @@ var data = {
 		"display_name": "New Player",
 		"current_level": 1,
 		"g_coin_balance": 0,
-		"role": "PLAYER"
+		"role": "PLAYER",
+		"menu_theme_url": "",
+		"purchased_theme_ids": []
 	},
 	"memory_records": {}
 }
@@ -40,6 +42,10 @@ func load_data():
 				data["account"] = loaded_data["account"]
 				if not data["account"].has("current_level"):
 					data["account"]["current_level"] = 1
+				if not data["account"].has("menu_theme_url"):
+					data["account"]["menu_theme_url"] = ""
+				if not data["account"].has("purchased_theme_ids"):
+					data["account"]["purchased_theme_ids"] = []
 			if loaded_data.has("memory_records"):
 				data["memory_records"] = loaded_data["memory_records"]
 		else:
@@ -48,6 +54,16 @@ func load_data():
 
 func get_account():
 	return data["account"]
+
+func reset_session():
+	data["account"]["user_id"] = -1
+	data["account"]["display_name"] = "New Player"
+	data["account"]["current_level"] = 1
+	data["account"]["g_coin_balance"] = 0
+	data["account"]["role"] = "PLAYER"
+	data["account"]["menu_theme_url"] = ""
+	data["account"]["purchased_theme_ids"] = []
+	save_data()
 
 func update_account(key: String, value: Variant):
 	data["account"][key] = value

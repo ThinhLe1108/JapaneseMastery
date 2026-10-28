@@ -52,8 +52,11 @@ try {
 
     # 4. Vocabularies
     Write-Host "`n4. Testing Vocabularies API..." -ForegroundColor Yellow
-    $vocabs = Invoke-RestMethod -Uri "$baseUrl/api/player/vocabularies?level=25" -Method Get
-    Assert-Result "Fetched Vocabularies for Level 25" ($vocabs.Count -gt 0) "Vocab count was 0"
+    $vocabsL1 = Invoke-RestMethod -Uri "$baseUrl/api/player/vocabularies?level=1" -Method Get
+    Assert-Result "Fetched Vocabularies for Level 1 (Database)" ($vocabsL1.Count -gt 0) "Vocab count was 0"
+
+    $vocabsL25 = Invoke-RestMethod -Uri "$baseUrl/api/player/vocabularies?level=25" -Method Get
+    Assert-Result "Fetched Vocabularies for Level 25 (Advanced/Jisho)" ($vocabsL25.Count -gt 0) "Vocab count was 0"
 
     # 5. Admin Vocab Search
     Write-Host "`n5. Testing Vocabulary Search API..." -ForegroundColor Yellow

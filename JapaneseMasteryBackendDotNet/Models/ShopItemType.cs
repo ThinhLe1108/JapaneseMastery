@@ -2,6 +2,8 @@ namespace JapaneseMasteryBackendDotNet.Models;
 
 public enum ShopItemType
 {
-    THEME
+    THEME,
+    AVATAR_FRAME,
+    PARTICLE,
+    BGM
 }
-
