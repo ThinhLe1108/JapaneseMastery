@@ -164,19 +164,13 @@ public class SoloLearningManager : MonoBehaviour
         List<CurriculumItem> rawList = Curriculum.GetLevel(level);
         if (rawList == null) rawList = new List<CurriculumItem>();
         
-        // Populate vocabData from rawList (offline) with duplication logic for safety
+        // Populate vocabData from rawList (offline)
         vocabData.Clear();
         foreach (var item in rawList)
         {
             if (string.IsNullOrEmpty(item.wordJp)) item.wordJp = item.kana;
             if (string.IsNullOrEmpty(item.kana)) item.kana = item.wordJp;
-
-            if (HasKanji(item.wordJp))
-            {
-                vocabData.Add(new CurriculumItem { wordJp = item.wordJp, kana = item.kana, romaji = item.romaji, meaning = item.meaning });
-                vocabData.Add(new CurriculumItem { wordJp = item.kana, kana = item.kana, romaji = item.romaji, meaning = item.meaning });
-            }
-            else vocabData.Add(item);
+            vocabData.Add(new CurriculumItem { wordJp = item.wordJp, kana = item.kana, romaji = item.romaji, meaning = item.meaning });
         }
 
         if (NetworkManager.Instance != null)
@@ -197,15 +191,19 @@ public class SoloLearningManager : MonoBehaviour
                     if (list != null && list.Count > 0)
                     {
                         Debug.Log("SoloLearningManager: Found " + list.Count + " words from server.");
-                        // Backend already handles duplication, so we just clear and add
                         vocabData.Clear();
                         foreach (var item in list)
                         {
+                            string wJp = item.ContainsKey("wordJp") ? item["wordJp"]?.ToString() ?? "" : "";
+                            string k = item.ContainsKey("kana") ? item["kana"]?.ToString() ?? "" : "";
+                            if (string.IsNullOrEmpty(wJp)) wJp = k;
+                            if (string.IsNullOrEmpty(k)) k = wJp;
+
                             vocabData.Add(new CurriculumItem {
-                                wordJp = item.ContainsKey("wordJp") ? item["wordJp"].ToString() : "",
-                                kana = item.ContainsKey("kana") ? item["kana"].ToString() : "",
-                                romaji = item.ContainsKey("romaji") ? item["romaji"].ToString() : "",
-                                meaning = item.ContainsKey("meaning") ? item["meaning"].ToString() : ""
+                                wordJp = wJp,
+                                kana = k,
+                                romaji = item.ContainsKey("romaji") ? item["romaji"]?.ToString() ?? "" : "",
+                                meaning = item.ContainsKey("meaning") ? item["meaning"]?.ToString() ?? "" : ""
                             });
                         }
                     }
