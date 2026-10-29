@@ -36,6 +36,9 @@ hs_err_pid*
 JMdict_e
 *.json
 !JapaneseMastery/kanjivg_paths.json
+!JapaneseMastery/data/*.json
+!JapaneseMasteryUnity/Assets/StreamingAssets/data/*.json
+!JapaneseMasteryBackendDotNet/data/*.json
 *.sqlite
 *.db
 

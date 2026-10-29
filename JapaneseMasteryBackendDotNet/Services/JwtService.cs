@@ -31,16 +31,8 @@ public class JwtService
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = GetSigningKey();
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, userId > 0 ? userId.ToString() : username),
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.Role, role),
-            new Claim("userId", userId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
+        
+        // Use a single claims list definition
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, userId > 0 ? userId.ToString() : username),

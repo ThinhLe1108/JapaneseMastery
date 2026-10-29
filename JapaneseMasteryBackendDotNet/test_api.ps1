@@ -47,20 +47,23 @@ try {
 
     # 3. Admin Users
     Write-Host "`n3. Testing Admin Users API..." -ForegroundColor Yellow
-    $users = Invoke-RestMethod -Uri "$baseUrl/api/admin/users" -Method Get
+    $users = Invoke-RestMethod -Uri "$baseUrl/api/admin/users" -Headers $headers -Method Get
     Assert-Result "Fetched Users List" ($users.Count -ge 1) "Expected >= 1 users"
 
     # 4. Vocabularies
     Write-Host "`n4. Testing Vocabularies API..." -ForegroundColor Yellow
     $vocabsL1 = Invoke-RestMethod -Uri "$baseUrl/api/player/vocabularies?level=1" -Method Get
-    Assert-Result "Fetched Vocabularies for Level 1 (Database)" ($vocabsL1.Count -gt 0) "Vocab count was 0"
+    Assert-Result "Fetched Vocabularies for Level 1" ($vocabsL1.Count -gt 0) "Vocab count was 0"
 
     $vocabsL25 = Invoke-RestMethod -Uri "$baseUrl/api/player/vocabularies?level=25" -Method Get
-    Assert-Result "Fetched Vocabularies for Level 25 (Advanced/Jisho)" ($vocabsL25.Count -gt 0) "Vocab count was 0"
+    Assert-Result "Fetched Vocabularies for Level 25" ($vocabsL25.Count -gt 0) "Vocab count was 0"
+
+    $adminVocabsL25 = Invoke-RestMethod -Uri "$baseUrl/api/admin/vocabularies?level=25" -Headers $headers -Method Get
+    Assert-Result "Admin and Player see identical vocab count for Level 25" ($adminVocabsL25.Count -eq $vocabsL25.Count) "Admin has $($adminVocabsL25.Count) but Player has $($vocabsL25.Count)"
 
     # 5. Admin Vocab Search
     Write-Host "`n5. Testing Vocabulary Search API..." -ForegroundColor Yellow
-    $search = Invoke-RestMethod -Uri "$baseUrl/api/admin/vocabularies?q=test" -Method Get
+    $search = Invoke-RestMethod -Uri "$baseUrl/api/admin/vocabularies?q=test" -Headers $headers -Method Get
     Assert-Result "Search Vocabularies returned array" ($null -ne $search)
 
     # 6. Shop Items
